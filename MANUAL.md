@@ -392,12 +392,23 @@ http://localhost:8888/admin.html
 
 | Funció | Descripció |
 |--------|------------|
-| **Stats en temps real** | Jugadors connectats, tanks actius, bales en vol |
-| **Classificació** | Rànquing actualitzat cada 2 segons |
+| **Stats en temps real** | Jugadors connectats, tanks actius, bales en vol, tick actual |
+| **Camp de batalla en directe** | Canvas 480×360 que mostra el mapa, els tancs i les bales actualitzat cada 200 ms |
+| **Classificació** | Rànquing amb punts, vides i estat de cada jugador, actualitzat cada 200 ms |
 | **Nova Ronda** | Genera un mapa nou amb parets noves, restaura vides (manté puntuació) |
 | **Reset Puntuació** | Posa tots els marcadors a zero |
 | **Tancar Partida** | Desconnecta tots els jugadors i retorna-los a la pantalla d'inici |
 | **Kick** | Expulsa un jugador concret de la partida |
+
+### Llegenda del camp de batalla
+
+| Element | Representació |
+|---------|---------------|
+| Terra | Quadre fosc |
+| Paret | Quadre marró |
+| Tank viu | Quadre de color del jugador amb línia de direcció |
+| Tank mort | Quadre de color semitransparent |
+| Bala | Punt groc |
 
 ### Sistema de puntuació
 
