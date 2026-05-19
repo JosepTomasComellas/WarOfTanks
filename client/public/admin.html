@@ -282,7 +282,7 @@
     for (let ty = 0; ty < mapH; ty++) {
       for (let tx = 0; tx < mapW; tx++) {
         const idx   = ty * mapW + tx;
-        const isWall = (bits[idx >> 3] >> (7 - (idx & 7))) & 1;
+        const isWall = (bits[idx >> 3] >> (idx & 7)) & 1;
         const r = isWall ? 110 : 18;
         const g = isWall ?  75 : 22;
         const b = isWall ?  30 : 18;
