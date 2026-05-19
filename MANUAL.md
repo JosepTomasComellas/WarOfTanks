@@ -171,6 +171,88 @@ sudo docker compose -f docker-compose.server.yml up --build -d
 
 ---
 
+### 2.10 Activar HTTPS (opcional)
+
+Si tens certificats SSL (per exemple de Let's Encrypt o corporatius), pots servir la interfície web per HTTPS. El port de joc UDP continua sent el 8888.
+
+#### Pas 1 · Prepara els certificats
+
+Els fitxers han d'estar accessibles al servidor. Per exemple:
+
+```
+/etc/ssl/wot/cert.pem       ← certificat (o fullchain.pem)
+/etc/ssl/wot/key.pem        ← clau privada (o privkey.pem)
+```
+
+Si fas servir Let's Encrypt, els trobaràs a:
+```
+/etc/letsencrypt/live/<domini>/fullchain.pem
+/etc/letsencrypt/live/<domini>/privkey.pem
+```
+
+#### Pas 2 · Crea un fitxer `.env` a la carpeta del projecte
+
+```bash
+cat > /opt/WarOfTanks/.env << 'EOF'
+CERTS_PATH=/etc/ssl/wot
+EOF
+```
+
+(Substitueix `/etc/ssl/wot` pel directori real dels teus certificats.)
+
+#### Pas 3 · Edita `docker-compose.server.yml`
+
+Descomenta les línies marcades amb `[HTTPS]`:
+
+```yaml
+environment:
+  - ROLE=server
+  - UDP_PORT=8888
+  - HTTP_PORT=8888
+  - HTTPS_ENABLED=true          # ← descomenta
+  - SSL_CERT=/certs/cert.pem    # ← descomenta (ajusta el nom si cal)
+  - SSL_KEY=/certs/key.pem      # ← descomenta (ajusta el nom si cal)
+
+volumes:
+  - ${CERTS_PATH}:/certs:ro     # ← descomenta
+```
+
+> Si els teus fitxers no es diuen `cert.pem` i `key.pem`, canvia els noms a les variables `SSL_CERT` i `SSL_KEY`. Per exemple, per Let's Encrypt:
+> ```yaml
+> - SSL_CERT=/certs/fullchain.pem
+> - SSL_KEY=/certs/privkey.pem
+> ```
+
+#### Pas 4 · Reinicia el servidor
+
+```bash
+cd /opt/WarOfTanks
+sudo docker compose -f docker-compose.server.yml up --build -d
+sudo docker compose -f docker-compose.server.yml logs
+```
+
+Has de veure:
+```
+[Proxy] HTTPS activat (cert: /certs/cert.pem)
+[Proxy] HTTPS+WSS on port 8888  →  UDP localhost:8888
+[Proxy] Open browser at https://localhost:8888
+```
+
+#### Pas 5 · Accedir
+
+La interfície web i el panell d'administrador ara s'accedeixen per HTTPS:
+
+```
+https://<IP_SERVIDOR>:8888
+https://<IP_SERVIDOR>:8888/admin.html
+```
+
+El navegador dels alumnes usarà automàticament `wss://` per al WebSocket.
+
+> **Nota sobre el firewall:** No cal canviar res, el port 8888/tcp ja estava obert.
+
+---
+
 ## 3. Clients — Windows amb Docker Desktop
 
 ### 3.1 Requisits previs

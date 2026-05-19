@@ -14,7 +14,10 @@ ENV NODE_ENV=production \
     ROLE=client \
     SERVER_IP=localhost \
     UDP_PORT=8888 \
-    HTTP_PORT=8888
+    HTTP_PORT=8888 \
+    HTTPS_ENABLED=false \
+    SSL_CERT=/certs/cert.pem \
+    SSL_KEY=/certs/key.pem
 
 EXPOSE 8888
 EXPOSE 8888/udp

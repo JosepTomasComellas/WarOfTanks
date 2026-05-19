@@ -27,7 +27,8 @@ class Game {
 
   start(playerName) {
     this._joinName = playerName;
-    const wsUrl = `ws://${location.host}`;
+    const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl   = `${wsProto}//${location.host}`;
     this.ws = new WebSocket(wsUrl);
     this.ws.binaryType = 'arraybuffer';
 

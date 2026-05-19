@@ -1,13 +1,17 @@
-const dgram   = require('dgram');
-const http    = require('http');
+const dgram     = require('dgram');
+const http      = require('http');
+const https     = require('https');
 const WebSocket = require('ws');
-const fs      = require('fs');
-const path    = require('path');
-const bridge  = require('../state-bridge');
+const fs        = require('fs');
+const path      = require('path');
+const bridge    = require('../state-bridge');
 
-const SERVER_IP = process.env.SERVER_IP || 'localhost';
-const UDP_PORT  = parseInt(process.env.UDP_PORT  || '8888', 10);
-const HTTP_PORT = parseInt(process.env.HTTP_PORT || '8888', 10);
+const SERVER_IP     = process.env.SERVER_IP     || 'localhost';
+const UDP_PORT      = parseInt(process.env.UDP_PORT  || '8888', 10);
+const HTTP_PORT     = parseInt(process.env.HTTP_PORT || '8888', 10);
+const HTTPS_ENABLED = process.env.HTTPS_ENABLED === 'true';
+const SSL_CERT      = process.env.SSL_CERT || '/certs/cert.pem';
+const SSL_KEY       = process.env.SSL_KEY  || '/certs/key.pem';
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -118,9 +122,25 @@ function handleAdmin(req, res, urlPath) {
   jsonReply(res, 404, { error: 'Unknown admin endpoint' });
 }
 
-// ── HTTP server ────────────────────────────────────────────────────────────
+// ── HTTP / HTTPS server ────────────────────────────────────────────────────
 
-const httpServer = http.createServer((req, res) => {
+function createServer(handler) {
+  if (!HTTPS_ENABLED) return http.createServer(handler);
+  try {
+    const opts = {
+      cert: fs.readFileSync(SSL_CERT),
+      key:  fs.readFileSync(SSL_KEY),
+    };
+    console.log(`[Proxy] HTTPS activat (cert: ${SSL_CERT})`);
+    return https.createServer(opts, handler);
+  } catch (err) {
+    console.error(`[Proxy] Error carregant certificats SSL: ${err.message}`);
+    console.error('[Proxy] Revertint a HTTP sense xifrat');
+    return http.createServer(handler);
+  }
+}
+
+const httpServer = createServer((req, res) => {
   const urlPath = req.url.split('?')[0];
 
   // Admin API
@@ -165,9 +185,11 @@ wss.on('connection', (ws) => {
 });
 
 httpServer.listen(HTTP_PORT, () => {
-  console.log(`[Proxy] HTTP+WS on port ${HTTP_PORT}  →  UDP ${SERVER_IP}:${UDP_PORT}`);
-  console.log(`[Proxy] Open browser at http://localhost:${HTTP_PORT}`);
+  const proto = HTTPS_ENABLED ? 'https' : 'http';
+  const ws    = HTTPS_ENABLED ? 'wss'   : 'ws';
+  console.log(`[Proxy] ${proto.toUpperCase()}+${ws.toUpperCase()} on port ${HTTP_PORT}  →  UDP ${SERVER_IP}:${UDP_PORT}`);
+  console.log(`[Proxy] Open browser at ${proto}://localhost:${HTTP_PORT}`);
   if (bridge.gameServer) {
-    console.log(`[Proxy] Admin panel at http://localhost:${HTTP_PORT}/admin.html`);
+    console.log(`[Proxy] Admin panel at ${proto}://localhost:${HTTP_PORT}/admin.html`);
   }
 });
