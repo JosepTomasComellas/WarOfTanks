@@ -12,18 +12,17 @@ class Game {
 
     this.gs = { map: null, tanks: [], bullets: [] };
 
-    this.ping         = 0;
-    this._lastPingTs  = 0;
-    this._prevKeys    = -1;
+    this.ping          = 0;
+    this._lastPingTs   = 0;
+    this._prevKeys     = -1;
+    this._wasShootFlash = false;
 
-    this._rafId       = null;
-    this._inputTimer  = null;
-    this._pingTimer   = null;
-    this._lastFrame   = 0;
-
-    // Retry join if welcome not received
+    this._rafId        = null;
+    this._inputTimer   = null;
+    this._pingTimer    = null;
+    this._lastFrame    = 0;
     this._joinRetryTimer = null;
-    this._joinName       = '';
+    this._joinName     = '';
   }
 
   start(playerName) {
@@ -32,29 +31,16 @@ class Game {
     this.ws = new WebSocket(wsUrl);
     this.ws.binaryType = 'arraybuffer';
 
-    this.ws.onopen = () => {
-      console.log('[Game] WS connected');
-      this._sendJoin();
-    };
-
-    this.ws.onmessage = (ev) => {
-      this._onPacket(new Uint8Array(ev.data));
-    };
-
-    this.ws.onclose = () => {
-      console.log('[Game] WS closed');
-      this._cleanup();
-      showScreen('disconnected');
-    };
-
-    this.ws.onerror = (err) => console.error('[Game] WS error', err);
+    this.ws.onopen    = ()  => { console.log('[Game] WS connected'); this._sendJoin(); };
+    this.ws.onmessage = (ev) => this._onPacket(new Uint8Array(ev.data));
+    this.ws.onclose   = ()  => { this._cleanup(); showScreen('disconnected'); };
+    this.ws.onerror   = (e) => console.error('[Game] WS error', e);
   }
 
   _sendJoin() {
     this._send(buildJoin(this._joinName));
-    // Retry every 2s until WELCOME arrives
     this._joinRetryTimer = setTimeout(() => {
-      if (!this.myId) { console.log('[Game] Retrying JOIN...'); this._sendJoin(); }
+      if (!this.myId) { console.log('[Game] Retrying JOIN…'); this._sendJoin(); }
     }, 2000);
   }
 
@@ -80,34 +66,41 @@ class Game {
         this.gs.tanks   = pkt.tanks;
         this.gs.bullets = pkt.bullets;
         const me = pkt.tanks.find(t => t.id === this.myId);
-        if (me) this.renderer.centerOn(me.x, me.y);
+        if (me) {
+          this.renderer.centerOn(me.x, me.y);
+          if (me.shootFlash && !this._wasShootFlash) Sounds.shoot();
+          this._wasShootFlash = me.shootFlash;
+        }
         break;
       }
 
-      case PacketType.PONG: {
+      case PacketType.PONG:
         this.ping = Math.min(Date.now() - this._lastPingTs, 9999);
         break;
-      }
 
       case PacketType.EVENT: {
-        if (pkt.eventType === EventType.EXPLOSION || pkt.eventType === EventType.TANK_KILLED) {
-          this.renderer.addExplosion(pkt.x, pkt.y);
+        const { eventType, x, y, playerId } = pkt;
+        if (eventType === EventType.EXPLOSION) {
+          this.renderer.addExplosion(x, y);
+          Sounds.explosion();
         }
-        if (pkt.eventType === EventType.ROUND_START) {
-          const winner = this.players.get(pkt.playerId);
+        if (eventType === EventType.TANK_KILLED) {
+          this.renderer.addExplosion(x, y);
+          if (playerId === this.myId) Sounds.death();
+          else Sounds.explosion();
+        }
+        if (eventType === EventType.ROUND_START) {
+          const winner = this.players.get(playerId);
           this.renderer.showRoundMessage(winner ? `${winner} WINS!` : 'NEW ROUND!');
-        }
-        if (pkt.eventType === EventType.GAME_OVER) {
-          this.renderer.showRoundMessage('GAME OVER');
+          Sounds.newRound();
         }
         break;
       }
 
-      case PacketType.PLAYER_LIST: {
+      case PacketType.PLAYER_LIST:
         this.players.clear();
         for (const p of pkt.players) this.players.set(p.id, p.name);
         break;
-      }
     }
   }
 
@@ -123,7 +116,6 @@ class Game {
   }
 
   _startInput() {
-    // Send input at 20 Hz; only transmit when keys change or every 10th tick
     let ticks = 0;
     this._inputTimer = setInterval(() => {
       if (!this.myId || !this._wsOpen()) return;
@@ -144,18 +136,14 @@ class Game {
     }, 2000);
   }
 
-  _send(data) {
-    if (this._wsOpen()) this.ws.send(data);
-  }
+  _send(data) { if (this._wsOpen()) this.ws.send(data); }
 
-  _wsOpen() {
-    return this.ws && this.ws.readyState === WebSocket.OPEN;
-  }
+  _wsOpen() { return this.ws && this.ws.readyState === WebSocket.OPEN; }
 
   _cleanup() {
-    if (this._rafId)     cancelAnimationFrame(this._rafId);
-    if (this._inputTimer) clearInterval(this._inputTimer);
-    if (this._pingTimer)  clearInterval(this._pingTimer);
+    if (this._rafId)          cancelAnimationFrame(this._rafId);
+    if (this._inputTimer)     clearInterval(this._inputTimer);
+    if (this._pingTimer)      clearInterval(this._pingTimer);
     if (this._joinRetryTimer) clearTimeout(this._joinRetryTimer);
     this.input.destroy();
   }

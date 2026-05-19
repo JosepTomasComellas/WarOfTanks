@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>War of Tanks — Control Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --green:     #00ff41;
+      --green-dim: #00aa30;
+      --green-dk:  #005518;
+      --gold:      #f0b429;
+      --red:       #ff4444;
+      --blue:      #4488ff;
+      --bg:        #050d05;
+    }
+
+    html, body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--green);
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+    }
+
+    body {
+      background-image: url('images/Fons_Salesians.png');
+      background-size: cover;
+      background-attachment: fixed;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: rgba(0,5,0,0.88);
+      z-index: 0; pointer-events: none;
+    }
+
+    /* ── Header ── */
+    header {
+      position: relative; z-index: 10;
+      display: flex; align-items: center; gap: 16px;
+      padding: 12px 24px;
+      background: rgba(0,0,0,0.9);
+      border-bottom: 2px solid var(--green-dk);
+    }
+    header img { height: 40px; filter: drop-shadow(0 0 6px rgba(0,255,65,.4)); }
+    .h-title { font-size: 14px; text-shadow: 0 0 10px var(--green); letter-spacing: 3px; }
+    .h-sub   { font-size: 7px; color: var(--green-dim); letter-spacing: 2px; margin-top: 4px; }
+
+    /* ── Layout ── */
+    main {
+      position: relative; z-index: 5;
+      max-width: 1000px; margin: 0 auto;
+      padding: 24px 16px;
+      display: flex; flex-direction: column; gap: 20px;
+    }
+
+    /* ── Stat cards ── */
+    .stats {
+      display: flex; gap: 16px; flex-wrap: wrap;
+    }
+    .stat-card {
+      flex: 1; min-width: 140px;
+      background: rgba(0,0,0,0.7);
+      border: 2px solid var(--green-dk);
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-val  { font-size: 28px; color: var(--green); text-shadow: 0 0 12px var(--green); }
+    .stat-label { font-size: 7px; color: var(--green-dim); margin-top: 8px; letter-spacing: 2px; }
+
+    /* ── Buttons ── */
+    .btn-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    button {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 9px;
+      padding: 12px 18px;
+      cursor: pointer;
+      border: none;
+      letter-spacing: 1px;
+      transition: transform .08s, box-shadow .08s;
+    }
+    button:hover  { transform: scale(1.04); }
+    button:active { transform: scale(.97); }
+
+    .btn-primary { background: var(--green); color: #000; }
+    .btn-primary:hover { background: #fff; box-shadow: 0 0 16px var(--green); }
+
+    .btn-warn { background: #ff8800; color: #000; }
+    .btn-warn:hover { background: #ffcc00; box-shadow: 0 0 16px #ff8800; }
+
+    .btn-danger { background: var(--red); color: #fff; }
+    .btn-danger:hover { box-shadow: 0 0 16px var(--red); }
+
+    /* ── Player table ── */
+    .table-wrap {
+      background: rgba(0,0,0,0.7);
+      border: 2px solid var(--green-dk);
+      overflow-x: auto;
+    }
+    .table-header {
+      padding: 10px 16px;
+      background: rgba(0,255,65,0.06);
+      border-bottom: 1px solid var(--green-dk);
+      font-size: 9px; letter-spacing: 2px; color: var(--green-dim);
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      font-size: 7px; letter-spacing: 2px; color: var(--green-dim);
+      padding: 8px 12px; text-align: left;
+      border-bottom: 1px solid var(--green-dk);
+    }
+    td {
+      font-size: 8px; padding: 8px 12px;
+      border-bottom: 1px solid rgba(0,85,24,.3);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(0,255,65,.04); }
+
+    .badge {
+      display: inline-block; padding: 2px 6px;
+      font-size: 7px;
+    }
+    .badge-alive { background: var(--green); color: #000; }
+    .badge-dead  { background: #333; color: #888; }
+    .badge-elim  { background: var(--red); color: #fff; }
+
+    .dot {
+      display: inline-block; width: 10px; height: 10px;
+      border-radius: 2px; margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    .kick-btn {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 7px; padding: 4px 8px;
+      background: transparent; color: var(--red);
+      border: 1px solid var(--red); cursor: pointer;
+    }
+    .kick-btn:hover { background: var(--red); color: #fff; }
+
+    /* ── Status bar ── */
+    .status {
+      font-size: 7px; color: var(--green-dim);
+      text-align: right; letter-spacing: 1px;
+    }
+    .status.ok  { color: var(--green); }
+    .status.err { color: var(--red); }
+
+    /* ── Footer ── */
+    footer {
+      position: relative; z-index: 10;
+      text-align: center; padding: 12px;
+      background: rgba(0,0,0,.9);
+      border-top: 1px solid var(--green-dk);
+      font-size: 7px; color: var(--green-dk);
+    }
+
+    @keyframes blink { 50% { opacity: 0; } }
+    .blink { animation: blink 1s step-end infinite; }
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="images/logo.png" alt="Logo">
+  <div>
+    <div class="h-title">WAR OF TANKS</div>
+    <div class="h-sub">▶ CONTROL CENTER — PROFESSOR</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-val" id="s-players">—</div>
+      <div class="stat-label">JUGADORS<br>CONNECTATS</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="s-alive">—</div>
+      <div class="stat-label">TANKS<br>ACTIUS</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="s-bullets">—</div>
+      <div class="stat-label">BALES<br>EN VOL</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="s-tick">—</div>
+      <div class="stat-label">TICK<br>ACTUAL</div>
+    </div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="btn-row">
+    <button class="btn-primary" onclick="newRound()">▶ NOVA RONDA</button>
+    <button class="btn-warn"    onclick="resetScores()">↺ RESET PUNTUACIÓ</button>
+  </div>
+
+  <!-- Player table -->
+  <div class="table-wrap">
+    <div class="table-header">★ CLASSIFICACIÓ EN TEMPS REAL
+      <span class="blink" style="float:right" id="refresh-dot">●</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>COLOR</th>
+          <th>NOM</th>
+          <th>PUNTS</th>
+          <th>VIDES</th>
+          <th>ESTAT</th>
+          <th>ACCIÓ</th>
+        </tr>
+      </thead>
+      <tbody id="player-tbody">
+        <tr><td colspan="7" style="text-align:center;color:#005518;padding:24px">
+          Esperant connexió al servidor…
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="status" id="status-bar">Connectant…</div>
+
+</main>
+
+<footer>© War of Tanks · Salesians · Panell exclusiu del professor</footer>
+
+<script>
+  const TANK_COLORS = ['#00ff41','#ff4444','#4488ff','#ffdd00','#ff44ff','#44ffff','#ff8800','#88ff44'];
+
+  function tankColor(id) { return TANK_COLORS[id % TANK_COLORS.length]; }
+
+  function statusBadge(p) {
+    if (p.lives <= 0 && !p.alive) return '<span class="badge badge-elim">ELIMINAT</span>';
+    if (!p.alive)                  return '<span class="badge badge-dead">MORT</span>';
+    return '<span class="badge badge-alive">VELL</span>';
+  }
+
+  async function fetchState() {
+    try {
+      const r = await fetch('/api/admin/state');
+      if (!r.ok) throw new Error(r.status);
+      const data = await r.json();
+      renderState(data);
+      document.getElementById('status-bar').textContent =
+        `Última actualització: ${new Date().toLocaleTimeString('ca')}`;
+      document.getElementById('status-bar').className = 'status ok';
+    } catch (e) {
+      document.getElementById('status-bar').textContent =
+        'Error: assegura\'t que ets al servidor (ROLE=server)';
+      document.getElementById('status-bar').className = 'status err';
+    }
+  }
+
+  function renderState(data) {
+    document.getElementById('s-players').textContent = data.playerCount;
+    document.getElementById('s-alive').textContent   = data.players.filter(p => p.alive).length;
+    document.getElementById('s-bullets').textContent = data.bulletCount;
+    document.getElementById('s-tick').textContent    = data.tick;
+
+    const tbody = document.getElementById('player-tbody');
+    if (data.players.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#005518;padding:24px">Cap jugador connectat</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.players.map((p, i) => `
+      <tr>
+        <td style="color:${p.alive ? '#00ff41' : '#333'}">${i + 1}</td>
+        <td><span class="dot" style="background:${tankColor(p.id)}"></span></td>
+        <td style="color:${tankColor(p.id)}">${escHtml(p.name)}</td>
+        <td style="color:#ffdd00">${String(p.score).padStart(5,'0')}</td>
+        <td>${'♥'.repeat(Math.max(0, p.lives))}${'♡'.repeat(Math.max(0, 3 - p.lives))}</td>
+        <td>${statusBadge(p)}</td>
+        <td><button class="kick-btn" onclick="kickPlayer(${p.id}, '${escHtml(p.name)}')">KICK</button></td>
+      </tr>
+    `).join('');
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  async function newRound() {
+    if (!confirm('Iniciar nova ronda? (els jugadors mantenen la puntuació)')) return;
+    await fetch('/api/admin/newround', { method: 'POST' });
+    fetchState();
+  }
+
+  async function resetScores() {
+    if (!confirm('Reiniciar totes les puntuacions a 0?')) return;
+    await fetch('/api/admin/resetscores', { method: 'POST' });
+    fetchState();
+  }
+
+  async function kickPlayer(id, name) {
+    if (!confirm(`Expulsar el jugador "${name}"?`)) return;
+    await fetch('/api/admin/kick', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    fetchState();
+  }
+
+  // Auto-refresh cada 2 s
+  fetchState();
+  setInterval(fetchState, 2000);
+</script>
+</body>
+</html>

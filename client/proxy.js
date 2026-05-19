@@ -1,8 +1,9 @@
-const dgram = require('dgram');
-const http  = require('http');
+const dgram   = require('dgram');
+const http    = require('http');
 const WebSocket = require('ws');
-const fs   = require('fs');
-const path = require('path');
+const fs      = require('fs');
+const path    = require('path');
+const bridge  = require('../state-bridge');
 
 const SERVER_IP = process.env.SERVER_IP || 'localhost';
 const UDP_PORT  = parseInt(process.env.UDP_PORT  || '8888', 10);
@@ -20,10 +21,19 @@ const MIME_TYPES = {
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
-// Inject SERVER_IP into index.html so the client JS can read it
-function serveIndex(res) {
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function serveFile(filePath, res) {
+  fs.readFile(filePath, (err, data) => {
+    if (err) { res.writeHead(404); res.end('Not found'); return; }
+    const ext = path.extname(filePath).toLowerCase();
+    res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' });
+    res.end(data);
+  });
+}
+
+function injectConfig(res) {
   let html = fs.readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
-  // Replace placeholder comment with actual config
   html = html.replace(
     '/* __SERVER_CONFIG__ */',
     `window.WOT_SERVER_IP = ${JSON.stringify(SERVER_IP)};`
@@ -32,23 +42,103 @@ function serveIndex(res) {
   res.end(html);
 }
 
+function jsonReply(res, status, obj) {
+  res.writeHead(status, {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+  });
+  res.end(JSON.stringify(obj));
+}
+
+function readBody(req) {
+  return new Promise((resolve) => {
+    let body = '';
+    req.on('data', c => { body += c; });
+    req.on('end', () => resolve(body));
+  });
+}
+
+// ── Admin API ──────────────────────────────────────────────────────────────
+
+function handleAdmin(req, res, urlPath) {
+  const gs = bridge.gameServer;
+
+  // CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST' });
+    res.end();
+    return;
+  }
+
+  if (urlPath === '/api/admin/state' && req.method === 'GET') {
+    if (!gs) return jsonReply(res, 503, { error: 'Not a server instance' });
+    return jsonReply(res, 200, gs.state.adminSnapshot());
+  }
+
+  if (urlPath === '/api/admin/newround' && req.method === 'POST') {
+    if (!gs) return jsonReply(res, 503, { error: 'Not a server instance' });
+    gs.state.newRound();
+    // Broadcast player list so clients see the reset
+    const { buildPlayerList } = require('../server/protocol');
+    gs._broadcast(buildPlayerList(gs.state.tanks));
+    console.log('[Admin] New round forced');
+    return jsonReply(res, 200, { ok: true });
+  }
+
+  if (urlPath === '/api/admin/resetscores' && req.method === 'POST') {
+    if (!gs) return jsonReply(res, 503, { error: 'Not a server instance' });
+    gs.state.resetScores();
+    console.log('[Admin] Scores reset');
+    return jsonReply(res, 200, { ok: true });
+  }
+
+  if (urlPath === '/api/admin/kick' && req.method === 'POST') {
+    if (!gs) return jsonReply(res, 503, { error: 'Not a server instance' });
+    readBody(req).then(body => {
+      try {
+        const { id } = JSON.parse(body);
+        if (id) {
+          gs.state.removePlayer(Number(id));
+          // Also remove from clients map
+          for (const [key, c] of gs.clients.entries()) {
+            if (c.playerId === Number(id)) { gs.clients.delete(key); break; }
+          }
+          const { buildPlayerList } = require('../server/protocol');
+          gs._broadcast(buildPlayerList(gs.state.tanks));
+          console.log(`[Admin] Kicked player ${id}`);
+          jsonReply(res, 200, { ok: true });
+        } else {
+          jsonReply(res, 400, { error: 'Missing id' });
+        }
+      } catch { jsonReply(res, 400, { error: 'Bad JSON' }); }
+    });
+    return;
+  }
+
+  jsonReply(res, 404, { error: 'Unknown admin endpoint' });
+}
+
+// ── HTTP server ────────────────────────────────────────────────────────────
+
 const httpServer = http.createServer((req, res) => {
   const urlPath = req.url.split('?')[0];
-  if (urlPath === '/' || urlPath === '/index.html') { serveIndex(res); return; }
+
+  // Admin API
+  if (urlPath.startsWith('/api/admin')) {
+    handleAdmin(req, res, urlPath);
+    return;
+  }
+
+  // Static files
+  if (urlPath === '/' || urlPath === '/index.html') { injectConfig(res); return; }
 
   const filePath = path.join(PUBLIC_DIR, urlPath);
-  // Security: prevent path traversal
   if (!filePath.startsWith(PUBLIC_DIR)) { res.writeHead(403); res.end(); return; }
-
-  fs.readFile(filePath, (err, data) => {
-    if (err) { res.writeHead(404); res.end('Not found'); return; }
-    const ext = path.extname(filePath).toLowerCase();
-    res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' });
-    res.end(data);
-  });
+  serveFile(filePath, res);
 });
 
-// WebSocket server shares the same HTTP server (upgrades on ws:// connect)
+// ── WebSocket proxy (browser ↔ UDP server) ─────────────────────────────────
+
 const wss = new WebSocket.Server({ server: httpServer });
 
 wss.on('connection', (ws) => {
@@ -57,7 +147,6 @@ wss.on('connection', (ws) => {
 
   udp.bind(0, () => { ready = true; });
 
-  // Browser → UDP server
   ws.on('message', (data, isBinary) => {
     if (!ready || ws.readyState !== WebSocket.OPEN) return;
     const buf = isBinary ? data : Buffer.from(data);
@@ -66,13 +155,11 @@ wss.on('connection', (ws) => {
     });
   });
 
-  // UDP server → Browser
   udp.on('message', (msg) => {
     if (ws.readyState === WebSocket.OPEN) ws.send(msg);
   });
 
   udp.on('error', (err) => console.error('[Proxy] UDP error:', err.message));
-
   ws.on('close', () => udp.close());
   ws.on('error', (err) => { console.error('[Proxy] WS error:', err.message); udp.close(); });
 });
@@ -80,4 +167,7 @@ wss.on('connection', (ws) => {
 httpServer.listen(HTTP_PORT, () => {
   console.log(`[Proxy] HTTP+WS on port ${HTTP_PORT}  →  UDP ${SERVER_IP}:${UDP_PORT}`);
   console.log(`[Proxy] Open browser at http://localhost:${HTTP_PORT}`);
+  if (bridge.gameServer) {
+    console.log(`[Proxy] Admin panel at http://localhost:${HTTP_PORT}/admin.html`);
+  }
 });

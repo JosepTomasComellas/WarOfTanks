@@ -162,6 +162,27 @@ class GameState {
     tank.shootCooldown = 1.5;
   }
 
+  resetScores() {
+    for (const t of this.tanks.values()) t.score = 0;
+  }
+
+  adminSnapshot() {
+    return {
+      tick:        this.tick,
+      playerCount: this.tanks.size,
+      bulletCount: this.bullets.size,
+      players: [...this.tanks.values()]
+        .map(t => ({
+          id:    t.id,
+          name:  t.name,
+          score: t.score,
+          lives: t.lives,
+          alive: t.alive,
+        }))
+        .sort((a, b) => b.score - a.score),
+    };
+  }
+
   _wallHit(x, y) {
     const r = 0.38;
     return (
