@@ -5,18 +5,20 @@ const PacketType = {
   PING:   0x03,
   LEAVE:  0x04,
   // Server → Client
-  WELCOME:     0x11,
-  STATE:       0x12,
-  PONG:        0x13,
-  EVENT:       0x14,
-  PLAYER_LIST: 0x15,
+  WELCOME:       0x11,
+  STATE:         0x12,
+  PONG:          0x13,
+  EVENT:         0x14,
+  PLAYER_LIST:   0x15,
+  MAP_RESET:     0x16,
 };
 
 const EventType = {
-  EXPLOSION:   1,
-  TANK_KILLED: 2,
-  ROUND_START: 3,
-  GAME_OVER:   4,
+  EXPLOSION:      1,
+  TANK_KILLED:    2,
+  ROUND_START:    3,
+  GAME_OVER:      4,
+  WALL_DESTROYED: 5,
 };
 
 const Dir  = { UP: 0, RIGHT: 1, DOWN: 2, LEFT: 3 };
@@ -108,6 +110,17 @@ function buildEvent(eventType, x, y, playerId) {
   return buf;
 }
 
+// MAP_RESET: [0x16][mapW:1][mapH:1][bitPackedMap:ceil(W*H/8)]
+function buildMapReset(map) {
+  const mapBits = map.toBitBuffer();
+  const buf = Buffer.allocUnsafe(3 + mapBits.length);
+  buf[0] = PacketType.MAP_RESET;
+  buf[1] = map.width;
+  buf[2] = map.height;
+  mapBits.copy(buf, 3);
+  return buf;
+}
+
 // PLAYER_LIST: [0x15][num:1]([id:1][nameLen:1][name:N])*
 function buildPlayerList(tanks) {
   const ta = [...tanks.values()];
@@ -130,5 +143,5 @@ function buildPlayerList(tanks) {
 module.exports = {
   PacketType, EventType, Dir, Keys,
   parseClientPacket,
-  buildWelcome, buildState, buildPong, buildEvent, buildPlayerList,
+  buildWelcome, buildState, buildPong, buildEvent, buildPlayerList, buildMapReset,
 };

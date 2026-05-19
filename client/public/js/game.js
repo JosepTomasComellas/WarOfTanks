@@ -95,8 +95,17 @@ class Game {
           this.renderer.showRoundMessage(winner ? `${winner} WINS!` : 'NEW ROUND!');
           Sounds.newRound();
         }
+        if (eventType === EventType.WALL_DESTROYED && this.gs.map) {
+          const tx = Math.floor(x);
+          const ty = Math.floor(y);
+          this.gs.map.tiles[ty * this.gs.map.width + tx] = 0;
+        }
         break;
       }
+
+      case PacketType.MAP_RESET:
+        this.gs.map = { width: pkt.mapW, height: pkt.mapH, tiles: pkt.tiles };
+        break;
 
       case PacketType.PLAYER_LIST:
         this.players.clear();

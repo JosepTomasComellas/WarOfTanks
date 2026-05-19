@@ -8,13 +8,14 @@ const DY = [-1, 0, 1,  0];
 
 class GameState {
   constructor() {
-    this.tanks   = new Map(); // id → Tank
-    this.bullets = new Map(); // id → Bullet
-    this.map     = null;
-    this.spawns  = [];
-    this.tick    = 0;
-    this.events  = [];        // flushed each tick by GameServer
-    this._roundTimer = null;
+    this.tanks        = new Map(); // id → Tank
+    this.bullets      = new Map(); // id → Bullet
+    this.map          = null;
+    this.spawns       = [];
+    this.tick         = 0;
+    this.events       = [];        // flushed each tick by GameServer
+    this.mapJustReset = false;
+    this._roundTimer  = null;
     this.newRound();
   }
 
@@ -24,6 +25,7 @@ class GameState {
     this.spawns = this.map.findSpawnPoints(128);
     this.bullets.clear();
     this.events = [];
+    this.mapJustReset = true;
 
     // Reset existing players
     let i = 0;
@@ -115,6 +117,13 @@ class GameState {
         this.bullets.delete(bid); continue;
       }
       if (this.map.isWall(b.x, b.y)) {
+        const tx = Math.floor(b.x);
+        const ty = Math.floor(b.y);
+        const isBorder = tx === 0 || ty === 0 || tx === this.map.width - 1 || ty === this.map.height - 1;
+        if (!isBorder) {
+          this.map._set(tx, ty, 0);
+          this.events.push({ type: EventType.WALL_DESTROYED, x: tx, y: ty, playerId: 0 });
+        }
         this.events.push({ type: EventType.EXPLOSION, x: b.x, y: b.y, playerId: 0 });
         this.bullets.delete(bid); continue;
       }

@@ -2,7 +2,7 @@ const dgram = require('dgram');
 const {
   PacketType, EventType,
   parseClientPacket,
-  buildWelcome, buildState, buildPong, buildEvent, buildPlayerList,
+  buildWelcome, buildState, buildPong, buildEvent, buildPlayerList, buildMapReset,
 } = require('./protocol');
 const GameState = require('./GameState');
 
@@ -80,6 +80,11 @@ class GameServer {
     this._tickCount++;
 
     this.state.update(dt);
+
+    if (this.state.mapJustReset) {
+      this._broadcast(buildMapReset(this.state.map));
+      this.state.mapJustReset = false;
+    }
 
     const statePkt = buildState(this.state.tick, this.state.tanks, this.state.bullets);
     this._broadcast(statePkt);

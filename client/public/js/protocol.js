@@ -3,11 +3,11 @@
 
 const PacketType = {
   JOIN: 0x01, INPUT: 0x02, PING: 0x03, LEAVE: 0x04,
-  WELCOME: 0x11, STATE: 0x12, PONG: 0x13, EVENT: 0x14, PLAYER_LIST: 0x15,
+  WELCOME: 0x11, STATE: 0x12, PONG: 0x13, EVENT: 0x14, PLAYER_LIST: 0x15, MAP_RESET: 0x16,
 };
 
 const EventType = {
-  EXPLOSION: 1, TANK_KILLED: 2, ROUND_START: 3, GAME_OVER: 4,
+  EXPLOSION: 1, TANK_KILLED: 2, ROUND_START: 3, GAME_OVER: 4, WALL_DESTROYED: 5,
 };
 
 const Dir  = { UP: 0, RIGHT: 1, DOWN: 2, LEFT: 3 };
@@ -113,6 +113,16 @@ function parseServerPacket(u8) {
           players.push({ id, name });
         }
         return { type, players };
+      }
+
+      case PacketType.MAP_RESET: {
+        const mapW = u8[1];
+        const mapH = u8[2];
+        const bits = u8.slice(3, 3 + Math.ceil(mapW * mapH / 8));
+        const tiles = new Uint8Array(mapW * mapH);
+        for (let i = 0; i < mapW * mapH; i++)
+          tiles[i] = (bits[i >> 3] >> (i & 7)) & 1;
+        return { type, mapW, mapH, tiles };
       }
 
       default: return null;
