@@ -181,6 +181,9 @@ class GameState {
       tick:        this.tick,
       playerCount: this.tanks.size,
       bulletCount: this.bullets.size,
+      mapW:   this.map ? this.map.width  : 80,
+      mapH:   this.map ? this.map.height : 60,
+      mapB64: this.map ? this.map.toBitBuffer().toString('base64') : '',
       players: [...this.tanks.values()]
         .map(t => ({
           id:    t.id,
@@ -188,8 +191,13 @@ class GameState {
           score: t.score,
           lives: t.lives,
           alive: t.alive,
+          x:     t.x,
+          y:     t.y,
+          dir:   t.dir,
         }))
         .sort((a, b) => b.score - a.score),
+      bullets: [...this.bullets.values()]
+        .map(b => ({ x: b.x, y: b.y, dir: b.dir, ownerId: b.ownerId })),
     };
   }
 

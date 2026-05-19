@@ -96,6 +96,21 @@
     .btn-danger { background: var(--red); color: #fff; }
     .btn-danger:hover { box-shadow: 0 0 16px var(--red); }
 
+    /* ── Battlefield canvas ── */
+    .battlefield-wrap {
+      background: rgba(0,0,0,0.7);
+      border: 2px solid var(--green-dk);
+      display: flex;
+      flex-direction: column;
+    }
+    .battlefield-wrap .table-header { border-bottom: 1px solid var(--green-dk); }
+    #battlefield-canvas {
+      display: block;
+      width: 100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
     /* ── Player table ── */
     .table-wrap {
       background: rgba(0,0,0,0.7);
@@ -203,6 +218,12 @@
     <button class="btn-danger"  onclick="endGame()">■ TANCAR PARTIDA</button>
   </div>
 
+  <!-- Battlefield live view -->
+  <div class="battlefield-wrap">
+    <div class="table-header">📡 CAMP DE BATALLA EN DIRECTE</div>
+    <canvas id="battlefield-canvas" width="480" height="360"></canvas>
+  </div>
+
   <!-- Player table -->
   <div class="table-wrap">
     <div class="table-header">★ CLASSIFICACIÓ EN TEMPS REAL
@@ -237,12 +258,114 @@
 <script>
   const TANK_COLORS = ['#00ff41','#ff4444','#4488ff','#ffdd00','#ff44ff','#44ffff','#ff8800','#88ff44'];
 
+  // ── Battlefield renderer ──────────────────────────────────────────────────
+  const BF_CANVAS = document.getElementById('battlefield-canvas');
+  const BF_CTX    = BF_CANVAS.getContext('2d');
+  const BF_W = 480, BF_H = 360;
+
+  let _lastMapB64 = null;
+  let _mapImageData = null; // pre-rendered static tiles
+
+  function base64ToUint8(b64) {
+    const bin = atob(b64);
+    const u8  = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    return u8;
+  }
+
+  function buildMapImage(mapW, mapH, b64) {
+    const bits = base64ToUint8(b64);
+    const ts   = BF_W / mapW; // tile size in canvas pixels
+    const id   = BF_CTX.createImageData(BF_W, BF_H);
+    const d    = id.data;
+
+    for (let ty = 0; ty < mapH; ty++) {
+      for (let tx = 0; tx < mapW; tx++) {
+        const idx   = ty * mapW + tx;
+        const isWall = (bits[idx >> 3] >> (7 - (idx & 7))) & 1;
+        const r = isWall ? 110 : 18;
+        const g = isWall ?  75 : 22;
+        const b = isWall ?  30 : 18;
+
+        const px0 = Math.round(tx * ts);
+        const py0 = Math.round(ty * ts);
+        const px1 = Math.round((tx + 1) * ts);
+        const py1 = Math.round((ty + 1) * ts);
+
+        for (let py = py0; py < py1; py++) {
+          for (let px = px0; px < px1; px++) {
+            const off = (py * BF_W + px) * 4;
+            d[off]   = r; d[off+1] = g; d[off+2] = b; d[off+3] = 255;
+          }
+        }
+      }
+    }
+    return id;
+  }
+
+  function renderBattlefield(data) {
+    if (!data || !data.mapB64) {
+      BF_CTX.fillStyle = '#050d05';
+      BF_CTX.fillRect(0, 0, BF_W, BF_H);
+      BF_CTX.fillStyle = '#005518';
+      BF_CTX.font = '10px monospace';
+      BF_CTX.textAlign = 'center';
+      BF_CTX.fillText('Esperant dades del servidor…', BF_W / 2, BF_H / 2);
+      return;
+    }
+
+    const mapW = data.mapW || 80;
+    const mapH = data.mapH || 60;
+    const ts   = BF_W / mapW;
+
+    // Re-render static map layer only when map changes
+    if (data.mapB64 !== _lastMapB64) {
+      _lastMapB64  = data.mapB64;
+      _mapImageData = buildMapImage(mapW, mapH, data.mapB64);
+    }
+    BF_CTX.putImageData(_mapImageData, 0, 0);
+
+    // Bullets
+    for (const b of (data.bullets || [])) {
+      const cx = b.x * ts;
+      const cy = b.y * ts;
+      BF_CTX.fillStyle = '#ffee00';
+      BF_CTX.fillRect(cx - 1.5, cy - 1.5, 3, 3);
+    }
+
+    // Tanks
+    const half = ts * 0.42;
+    for (const p of (data.players || [])) {
+      if (p.x == null) continue;
+      const cx = p.x * ts;
+      const cy = p.y * ts;
+      const col = TANK_COLORS[p.id % TANK_COLORS.length];
+
+      BF_CTX.globalAlpha = p.alive ? 1.0 : 0.25;
+      BF_CTX.fillStyle = col;
+      BF_CTX.fillRect(cx - half, cy - half, half * 2, half * 2);
+
+      // Direction indicator
+      if (p.alive) {
+        const ang = (p.dir || 0) * Math.PI / 2;
+        BF_CTX.strokeStyle = '#000';
+        BF_CTX.lineWidth = 1.5;
+        BF_CTX.beginPath();
+        BF_CTX.moveTo(cx, cy);
+        BF_CTX.lineTo(cx + Math.sin(ang) * half * 1.6, cy - Math.cos(ang) * half * 1.6);
+        BF_CTX.stroke();
+      }
+
+      BF_CTX.globalAlpha = 1.0;
+    }
+  }
+
   function tankColor(id) { return TANK_COLORS[id % TANK_COLORS.length]; }
 
   function statusBadge(p) {
     if (p.lives <= 0 && !p.alive) return '<span class="badge badge-elim">ELIMINAT</span>';
     if (!p.alive)                  return '<span class="badge badge-dead">MORT</span>';
-    return '<span class="badge badge-alive">VELL</span>';
+    return '<span class="badge badge-alive">VIU</span>';
   }
 
   async function fetchState() {
@@ -266,6 +389,7 @@
     document.getElementById('s-alive').textContent   = data.players.filter(p => p.alive).length;
     document.getElementById('s-bullets').textContent = data.bulletCount;
     document.getElementById('s-tick').textContent    = data.tick;
+    renderBattlefield(data);
 
     const tbody = document.getElementById('player-tbody');
     if (data.players.length === 0) {
@@ -325,9 +449,12 @@
     }
   }).catch(() => {});
 
-  // Auto-refresh cada 2 s
+  // Render buit inicialment
+  renderBattlefield(null);
+
+  // Auto-refresh cada 200 ms per vista en directe
   fetchState();
-  setInterval(fetchState, 2000);
+  setInterval(fetchState, 200);
 </script>
 </body>
 </html>
