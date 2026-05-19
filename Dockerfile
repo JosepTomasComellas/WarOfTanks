@@ -6,10 +6,8 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install --omit=dev
 
-# Copy source
-COPY entrypoint.js ./
-COPY server/ ./server/
-COPY client/ ./client/
+# Copy source (el .dockerignore exclou node_modules, .git, etc.)
+COPY . .
 
 # Environment defaults (overridden via docker run -e or .env)
 ENV NODE_ENV=production \
