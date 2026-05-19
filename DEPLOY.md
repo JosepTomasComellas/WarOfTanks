@@ -142,6 +142,42 @@ docker stop wot-client && docker rm wot-client
 
 ---
 
+## Guió ràpid per a la competició (full del professor)
+
+```
+┌─────────────────────────────────────────────────────┐
+│  CHECKLIST COMPETICIÓ  War of Tanks                  │
+├─────────────────────────────────────────────────────┤
+│ □ 1. Arranca el servidor al teu PC                   │
+│      docker run -d -e ROLE=server                    │
+│               -p 8888:8888/udp -p 8080:8080          │
+│               ghcr.io/joseptomascomellas/            │
+│               warofttanks:latest                     │
+│                                                      │
+│ □ 2. Escriu la teva IP a la pissarra                  │
+│      (ipconfig → Adreça IPv4)                        │
+│                                                      │
+│ □ 3. Els alumnes executen al seu PC:                  │
+│      docker run -d -e ROLE=client                    │
+│               -e SERVER_IP=<IP_PISSARRA>             │
+│               -p 8080:8080                           │
+│               ghcr.io/joseptomascomellas/            │
+│               warofttanks:latest                     │
+│      → Obrir http://localhost:8080                   │
+│                                                      │
+│ □ 4. Espera que tots els jugadors entrin              │
+│      (veus el recompte al leaderboard)               │
+│                                                      │
+│ □ 5. El joc comença automàticament. Last tank        │
+│      standing guanya la ronda (+500 pts).            │
+│                                                      │
+│ □ 6. Atura el servidor al final:                      │
+│      docker stop wot-server                          │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Resolució de problemes
 
 | Problema | Possible causa | Solució |

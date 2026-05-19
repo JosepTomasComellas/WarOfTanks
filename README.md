@@ -1,4 +1,6 @@
-# War of Tanks 🎮
+# War of Tanks
+
+[![Build & Publish](https://github.com/JosepTomasComellas/WarOfTanks/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/JosepTomasComellas/WarOfTanks/actions/workflows/docker-publish.yml)
 
 Joc de batalla de tanks en xarxa per a competicions d'aula.  
 Fins a **120 jugadors simultanis** · Protocol UDP port 8888 · Estètica retro arcade.

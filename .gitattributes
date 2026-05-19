@@ -1,0 +1,8 @@
+# Normalitza salts de línia: LF al repositori, conversió automàtica a Windows
+* text=auto eol=lf
+
+# Binaris: sense conversió
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.ico  binary
