@@ -217,7 +217,7 @@ wss.on('connection', async (ws) => {
   const cfg = await getServerConfig().catch(() => ({ maxTabsPerClient: 1 }));
   const maxTabs = cfg.maxTabsPerClient ?? 1;
   if (maxTabs > 0 && wss.clients.size > maxTabs) {
-    ws.close(1008, 'Too many connections');
+    ws.close(4001, 'Too many connections');
     return;
   }
 

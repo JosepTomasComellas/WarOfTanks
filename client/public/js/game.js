@@ -32,9 +32,14 @@ class Game {
     this.ws = new WebSocket(wsUrl);
     this.ws.binaryType = 'arraybuffer';
 
-    this.ws.onopen    = ()  => { console.log('[Game] WS connected'); this._sendJoin(); };
+    this.ws.onopen    = ()   => { console.log('[Game] WS connected'); this._sendJoin(); };
     this.ws.onmessage = (ev) => this._onPacket(new Uint8Array(ev.data));
-    this.ws.onclose   = ()  => { this._cleanup(); showScreen('disconnected'); };
+    this.ws.onclose   = (ev) => {
+      this._cleanup();
+      // Codi 4001 = límit de pestanyes; tornem al login en lloc de mostrar error
+      if (ev.code === 4001) showScreen('login');
+      else showScreen('disconnected');
+    };
     this.ws.onerror   = (e) => console.error('[Game] WS error', e);
   }
 
