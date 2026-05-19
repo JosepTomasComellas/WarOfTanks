@@ -14,11 +14,9 @@ ENV NODE_ENV=production \
     ROLE=client \
     SERVER_IP=localhost \
     UDP_PORT=8888 \
-    HTTP_PORT=8080
+    HTTP_PORT=8888
 
-# Web interface port (HTTP + WebSocket)
-EXPOSE 8080
-# Game server UDP port (only used when ROLE=server)
+EXPOSE 8888
 EXPOSE 8888/udp
 
 CMD ["node", "entrypoint.js"]

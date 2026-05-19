@@ -4,19 +4,20 @@ version: '3.8'
 #  War of Tanks — CLIENT (alumnes)
 #
 #  1. Crea un fitxer .env amb: SERVER_IP=x.x.x.x
-#  2. docker compose up -d
-#  3. Obre http://localhost:8080
+#  2. docker compose up --build -d
+#  3. Obre http://localhost:8888
 # ─────────────────────────────────────────────
 
 services:
   war-of-tanks:
+    build: .
     image: ghcr.io/joseptomascomellas/warofttanks:latest
     container_name: wot-client
     environment:
       - ROLE=client
       - SERVER_IP=${SERVER_IP}
       - UDP_PORT=8888
-      - HTTP_PORT=8080
+      - HTTP_PORT=8888
     ports:
-      - "8080:8080"
+      - "8888:8888"   # interfície web (TCP)
     restart: unless-stopped

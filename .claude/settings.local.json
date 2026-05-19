@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(New-Item -ItemType Directory -Force \"D:\\\\Claude\\\\Tanks\\\\client\\\\public\\\\images\")",
+      "Bash(Out-Null)",
+      "Bash(Copy-Item \"D:\\\\Claude\\\\Tanks\\\\Imatges\\\\logo.png\"           \"D:\\\\Claude\\\\Tanks\\\\client\\\\public\\\\images\\\\logo.png\")",
+      "Bash(Copy-Item \"D:\\\\Claude\\\\Tanks\\\\Imatges\\\\Fons_Salesians.png\" \"D:\\\\Claude\\\\Tanks\\\\client\\\\public\\\\images\\\\Fons_Salesians.png\")",
+      "Bash(Write-Host \"Imatges copiades OK\")",
+      "PowerShell(New-Item *)",
+      "Bash(npm install *)",
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(git config *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(gh auth *)",
+      "Bash(git push *)",
+      "Bash(git rm *)"
+    ]
+  }
+}

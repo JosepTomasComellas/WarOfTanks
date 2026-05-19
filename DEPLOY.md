@@ -46,8 +46,8 @@ docker compose -f docker-compose.server.yml logs
 Hauries de veure:
 ```
 [Server] UDP listening on port 8888
-[Proxy]  HTTP+WS on port 8080
-[Proxy]  Admin panel at http://localhost:8080/admin.html
+[Proxy]  HTTP+WS on port 8888
+[Proxy]  Admin panel at http://localhost:8888/admin.html
 ```
 
 ### Pas 3 · Obtén la teva IP i comunica-la als alumnes
@@ -75,7 +75,7 @@ Escriu la IP a la pissarra:
 Amb el servidor arrencat, obre al teu navegador:
 
 ```
-http://localhost:8080/admin.html
+http://localhost:8888/admin.html
 ```
 
 Des d'aquí pots veure els jugadors connectats, forçar una nova ronda i expulsar jugadors.
@@ -145,7 +145,7 @@ Container wot-client  Started
 Obre el navegador i ves a:
 
 ```
-http://localhost:8080
+http://localhost:8888
 ```
 
 Escriu el teu nom i prem **PLAYER START**.
@@ -173,7 +173,7 @@ docker compose down
 Accessible des del navegador del servidor:
 
 ```
-http://localhost:8080/admin.html
+http://localhost:8888/admin.html
 ```
 
 | Funció | Descripció |
@@ -224,13 +224,13 @@ docker compose logs -f
 │                      up -d                           │
 │  □ Obtén la IP amb: ipconfig                         │
 │  □ Escriu la IP a la pissarra                        │
-│  □ Obre: http://localhost:8080/admin.html            │
+│  □ Obre: http://localhost:8888/admin.html            │
 │                                                      │
 │  ALUMNES (un cop saben la IP):                       │
 │                                                      │
 │  □ Editen .env → SERVER_IP=<IP de la pissarra>       │
 │  □ Executen: docker compose up -d                    │
-│  □ Obren: http://localhost:8080                      │
+│  □ Obren: http://localhost:8888                      │
 │  □ Escriuen el seu nom → PLAYER START                │
 │                                                      │
 │  INICIAR RONDA:                                      │
@@ -252,7 +252,7 @@ docker compose logs -f
 ## Arquitectura (per als curiosos)
 
 ```
-  NAVEGADOR (localhost:8080)
+  NAVEGADOR (localhost:8888)
        │
        │  WebSocket
        ▼

@@ -7,7 +7,7 @@ const bridge  = require('../state-bridge');
 
 const SERVER_IP = process.env.SERVER_IP || 'localhost';
 const UDP_PORT  = parseInt(process.env.UDP_PORT  || '8888', 10);
-const HTTP_PORT = parseInt(process.env.HTTP_PORT || '8080', 10);
+const HTTP_PORT = parseInt(process.env.HTTP_PORT || '8888', 10);
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',

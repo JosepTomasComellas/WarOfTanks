@@ -17,8 +17,8 @@
    ┌──────────────────────────────┐
    │  Docker → War of Tanks       │
    │  · Game loop (UDP :8888)     │
-   │  · Interfície web (:8080)    │
-   │  · Panell admin (:8080)      │
+   │  · Interfície web (:8888)    │
+   │  · Panell admin (:8888)      │
    └──────────────┬───────────────┘
                   │ xarxa d'aula (LAN / WiFi)
        ┌──────────┴──────────┐
@@ -29,13 +29,13 @@
    │  proxy     │         │  proxy     │
    │  WS ↔ UDP │         │  WS ↔ UDP │
    └─────┬──────┘         └─────┬──────┘
-         │ localhost:8080        │ localhost:8080
+         │ localhost:8888        │ localhost:8888
     ┌────▼────┐             ┌────▼────┐
     │Navegador│             │Navegador│
     └─────────┘             └─────────┘
 ```
 
-Cada alumne obre `http://localhost:8080` al seu navegador.  
+Cada alumne obre `http://localhost:8888` al seu navegador.  
 El Docker local fa de pont entre el navegador (WebSocket) i el servidor (UDP).
 
 ---
@@ -90,7 +90,7 @@ Obre els ports necessaris:
 
 ```bash
 sudo ufw allow 8888/udp   # protocol de joc
-sudo ufw allow 8080/tcp   # interfície web i panell admin
+sudo ufw allow 8888/tcp   # interfície web i panell admin
 sudo ufw reload
 sudo ufw status
 ```
@@ -98,7 +98,7 @@ sudo ufw status
 Ha d'aparèixer:
 ```
 8888/udp     ALLOW
-8080/tcp     ALLOW
+8888/tcp     ALLOW
 ```
 
 > Si el sistema no té `ufw`, comprova amb `sudo iptables -L` i afegeix les regles corresponents.
@@ -121,8 +121,8 @@ sudo docker compose -f docker-compose.server.yml logs
 Has de veure les tres línies de confirmació:
 ```
 [Server] UDP listening on port 8888
-[Proxy]  HTTP+WS on port 8080  →  UDP localhost:8888
-[Proxy]  Admin panel at http://localhost:8080/admin.html
+[Proxy]  HTTP+WS on port 8888  →  UDP localhost:8888
+[Proxy]  Admin panel at http://localhost:8888/admin.html
 ```
 
 ### 2.7 Obtenir la IP del servidor
@@ -146,7 +146,7 @@ Exemple: `192.168.1.50`
 Des d'un altre ordinador de la mateixa xarxa, obre el navegador a:
 
 ```
-http://192.168.1.50:8080
+http://192.168.1.50:8888
 ```
 
 Ha d'aparèixer la pantalla de login de War of Tanks.
@@ -251,7 +251,7 @@ La primera vegada construeix la imatge (~2-3 minuts). Quan acabi veuràs:
 ### 3.6 Obrir el joc
 
 1. Obre el navegador (Chrome, Firefox o Edge)
-2. Ves a: `http://localhost:8080`
+2. Ves a: `http://localhost:8888`
 3. Escriu el teu nom
 4. Prem **PLAYER START**
 
@@ -280,13 +280,13 @@ docker compose down
 Accessible **des del servidor** (o des de qualsevol navegador de la xarxa):
 
 ```
-http://<IP_SERVIDOR>:8080/admin.html
+http://<IP_SERVIDOR>:8888/admin.html
 ```
 
 Si ets al propi servidor:
 
 ```
-http://localhost:8080/admin.html
+http://localhost:8888/admin.html
 ```
 
 ### Funcions disponibles
@@ -317,7 +317,7 @@ http://localhost:8080/admin.html
 sudo docker ps
 
 # Comprova que els ports no estan ocupats
-sudo ss -tulpn | grep -E '8080|8888'
+sudo ss -tulpn | grep -E '8888|8888'
 
 # Veure els logs d'error
 sudo docker compose -f docker-compose.server.yml logs
@@ -327,11 +327,11 @@ sudo docker compose -f docker-compose.server.yml logs
 
 ```bash
 # Des del servidor, verifica que els ports escolten
-sudo ss -tulpn | grep 8080
+sudo ss -tulpn | grep 8888
 sudo ss -ulpn | grep 8888
 
 # Des d'un PC client (Windows), prova la connectivitat HTTP:
-# Obre el navegador i ves a http://<IP_SERVIDOR>:8080
+# Obre el navegador i ves a http://<IP_SERVIDOR>:8888
 # Si no carrega → problema de xarxa o firewall
 
 # Comprova el firewall al servidor

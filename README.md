@@ -30,7 +30,7 @@ SERVER_IP=192.168.1.50
 
 ```bash
 docker compose up -d
-# → http://localhost:8080
+# → http://localhost:8888
 ```
 
 Consulta el **[MANUAL.md](MANUAL.md)** per a la guia completa pas a pas (Ubuntu Server + Windows Docker Desktop).
