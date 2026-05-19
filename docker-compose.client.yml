@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  war-of-tanks-client:
+    image: war-of-tanks:latest
+    container_name: wot-client
+    environment:
+      - ROLE=client
+      - SERVER_IP=${SERVER_IP}   # definit al .env del client
+      - UDP_PORT=8888
+      - HTTP_PORT=8080
+    ports:
+      - "8080:8080"               # interfície web del jugador
+    restart: unless-stopped

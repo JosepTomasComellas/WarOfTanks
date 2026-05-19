@@ -1,0 +1,307 @@
+/* ── Reset & base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --green:      #00ff41;
+  --green-dim:  #00aa30;
+  --green-dark: #005518;
+  --bg-dark:    #050d05;
+  --gold:       #f0b429;
+  --red:        #e53e3e;
+  --header-h:   72px;
+  --footer-h:   56px;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg-dark);
+  color: var(--green);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  overflow-x: hidden;
+}
+
+/* ── Layout ───────────────────────────────────────────────────────────────── */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-image: url('images/Fons_Salesians.png');
+  background-size: cover;
+  background-position: center top;
+  background-attachment: fixed;
+}
+
+/* dark overlay so the retro game UI stays readable */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 5, 0, 0.82);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── Header ───────────────────────────────────────────────────────────────── */
+.site-header {
+  position: relative;
+  z-index: 10;
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 24px;
+  background: rgba(0, 0, 0, 0.85);
+  border-bottom: 2px solid var(--green-dark);
+  box-shadow: 0 2px 20px rgba(0, 255, 65, 0.15);
+  flex-shrink: 0;
+}
+
+.header-logo {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(0,255,65,0.4));
+}
+
+.header-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.header-main {
+  font-size: 18px;
+  color: var(--green);
+  text-shadow: 0 0 12px var(--green), 0 0 24px rgba(0,255,65,0.4);
+  letter-spacing: 3px;
+}
+
+.header-sub {
+  font-size: 8px;
+  color: var(--green-dim);
+  letter-spacing: 2px;
+}
+
+/* ── Main / Screens ───────────────────────────────────────────────────────── */
+.site-main {
+  position: relative;
+  z-index: 5;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.screen { display: none; width: 100%; justify-content: center; align-items: center; }
+.screen.active { display: flex; }
+
+/* ── Arcade login frame ───────────────────────────────────────────────────── */
+.arcade-frame {
+  border: 3px solid var(--green);
+  padding: 36px 48px;
+  max-width: 480px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  box-shadow:
+    0 0 24px var(--green),
+    inset 0 0 24px rgba(0,255,65,0.04);
+  animation: crt-in 0.4s ease-out;
+  background: rgba(0,0,0,0.6);
+}
+
+.arcade-title { text-align: center; display: flex; flex-direction: column; gap: 10px; }
+
+.title-line1 {
+  font-size: 20px;
+  color: var(--green);
+  text-shadow: 0 0 10px var(--green), 0 0 30px rgba(0,255,65,0.5);
+  letter-spacing: 3px;
+}
+
+.title-line2 {
+  font-size: 11px;
+  color: var(--gold);
+  text-shadow: 0 0 8px var(--gold);
+  letter-spacing: 5px;
+}
+
+.blink-text {
+  font-size: 9px;
+  color: #00ffcc;
+  animation: blink 1s step-end infinite;
+  margin-top: 6px;
+}
+
+/* ── Login form ───────────────────────────────────────────────────────────── */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.login-form label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--green-dim);
+}
+
+#player-name {
+  width: 100%;
+  max-width: 300px;
+  background: transparent;
+  border: 2px solid var(--green-dark);
+  color: var(--green);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  padding: 10px 14px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  letter-spacing: 2px;
+}
+
+#player-name::placeholder { color: #005522; }
+
+#player-name:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 14px rgba(0,255,65,0.4);
+}
+
+button, #btn-start {
+  background: var(--green);
+  color: #000;
+  border: none;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  padding: 12px 22px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+
+button:hover, #btn-start:hover {
+  background: #fff;
+  box-shadow: 0 0 20px var(--green);
+  transform: scale(1.04);
+}
+
+button:active, #btn-start:active { transform: scale(0.97); }
+
+/* ── Controls info ────────────────────────────────────────────────────────── */
+.controls-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 8px;
+  color: var(--green-dim);
+  text-align: center;
+}
+
+.ctrl-row { letter-spacing: 1px; }
+
+.key {
+  display: inline-block;
+  background: rgba(0,255,65,0.12);
+  border: 1px solid var(--green-dark);
+  padding: 2px 6px;
+  color: var(--green);
+  font-size: 8px;
+}
+
+/* ── Game canvas screen ───────────────────────────────────────────────────── */
+#screen-game {
+  flex-direction: column;
+  position: relative;
+}
+
+#game-canvas {
+  display: block;
+  image-rendering: pixelated;
+  border: 2px solid var(--green-dark);
+  box-shadow: 0 0 30px rgba(0,255,65,0.2);
+}
+
+.round-message {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 20px;
+  color: #ffff00;
+  text-shadow: 0 0 24px #ffff00, 0 0 48px rgba(255,255,0,0.5);
+  z-index: 50;
+  pointer-events: none;
+  animation: msgpop 0.25s ease-out;
+  white-space: nowrap;
+}
+
+.round-message.visible { display: block; }
+
+/* ── Footer ───────────────────────────────────────────────────────────────── */
+.site-footer {
+  position: relative;
+  z-index: 10;
+  height: var(--footer-h);
+  background: rgba(0, 0, 0, 0.88);
+  border-top: 2px solid var(--green-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.footer-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.footer-logo {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
+  opacity: 0.7;
+}
+
+.footer-text {
+  font-size: 7px;
+  color: var(--green-dark);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  letter-spacing: 1px;
+}
+
+.footer-sep { opacity: 0.4; }
+
+/* ── Animations ───────────────────────────────────────────────────────────── */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+@keyframes crt-in {
+  from { opacity: 0; clip-path: inset(50% 0 50% 0); }
+  to   { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+@keyframes msgpop {
+  from { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
+  to   { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  #game-canvas { max-width: 100vw; }
+  .arcade-frame { padding: 24px 20px; }
+  .title-line1 { font-size: 14px; }
+  .header-main { font-size: 14px; }
+}

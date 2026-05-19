@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  war-of-tanks-server:
+    image: war-of-tanks:latest
+    container_name: wot-server
+    environment:
+      - ROLE=server
+      - UDP_PORT=8888
+      - HTTP_PORT=8080
+    ports:
+      - "8888:8888/udp"   # joc UDP
+      - "8080:8080"        # interfície web del servidor
+    restart: unless-stopped

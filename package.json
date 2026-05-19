@@ -1,0 +1,14 @@
+{
+  "name": "war-of-tanks",
+  "version": "1.0.0",
+  "description": "Multiplayer tank battle game for classroom competitions",
+  "main": "entrypoint.js",
+  "scripts": {
+    "start": "node entrypoint.js",
+    "server": "cross-env ROLE=server node entrypoint.js",
+    "client": "cross-env ROLE=client node entrypoint.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
