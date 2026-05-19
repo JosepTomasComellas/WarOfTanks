@@ -59,8 +59,8 @@ function getServerConfig() {
 
   return tryFetch(http, 'http')
     .catch(() => tryFetch(https, 'https'))
-    .then(cfg  => { _serverConfigCache = cfg;      return cfg;      })
-    .catch(()  => { _serverConfigCache = fallback; return fallback; });
+    .then(cfg  => { _serverConfigCache = cfg; return cfg; })
+    .catch(()  => fallback); // no cachegem el fallback: reintentarem al pròxim intent
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
