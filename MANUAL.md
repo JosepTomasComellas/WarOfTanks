@@ -6,7 +6,8 @@
 2. [Servidor — Ubuntu Server](#2-servidor--ubuntu-server)
 3. [Clients — Windows amb Docker Desktop](#3-clients--windows-amb-docker-desktop)
 4. [Panell d'administració](#4-panell-dadministració)
-5. [Resolució de problemes](#5-resolució-de-problemes)
+5. [Actualitzar a una versió nova](#5-actualitzar-a-una-versió-nova)
+6. [Resolució de problemes](#6-resolució-de-problemes)
 
 ---
 
@@ -151,7 +152,22 @@ http://192.168.1.50:8888
 
 Ha d'aparèixer la pantalla de login de War of Tanks.
 
-### 2.9 Comandos de gestió del servidor
+### 2.9 Configurar la densitat de parets
+
+Per defecte el mapa té poca densitat de parets (camp obert). Pots ajustar-ho editant `docker-compose.server.yml`:
+
+```yaml
+environment:
+  - WALL_DENSITY=20    # 0=camp buit · 20=poc dens · 50=moderat · 100=molt dens
+```
+
+Després de canviar el valor, reinicia el servidor:
+
+```bash
+sudo docker compose -f docker-compose.server.yml up --build -d
+```
+
+### 2.10 Comandos de gestió del servidor
 
 ```bash
 # Veure logs en temps real
@@ -162,16 +178,11 @@ sudo docker compose -f docker-compose.server.yml down
 
 # Reiniciar el servidor
 sudo docker compose -f docker-compose.server.yml restart
-
-# Actualitzar a la darrera versió
-cd /opt/WarOfTanks
-sudo git pull
-sudo docker compose -f docker-compose.server.yml up --build -d
 ```
 
 ---
 
-### 2.10 Activar HTTPS (opcional)
+### 2.11 Activar HTTPS (opcional)
 
 Si tens certificats SSL (per exemple de Let's Encrypt o corporatius), pots servir la interfície web per HTTPS. El port de joc UDP continua sent el 8888.
 
@@ -347,7 +358,13 @@ La primera vegada construeix la imatge (~2-3 minuts). Quan acabi veuràs:
 | `D` o `→` | Girar a la dreta |
 | `Espai` | Disparar |
 
-### 3.8 Aturar el client
+### 3.8 Sortir del joc
+
+Per sortir d'una partida en curs, fes clic al botó **✕ SORTIR** que apareix a la cantonada superior esquerra de la pantalla de joc. El joc et retornarà a la pantalla d'inici sense tancar el Docker.
+
+Si el professor tanca la partida des del panell d'administració, tots els clients tornaran automàticament a la pantalla d'inici.
+
+### 3.9 Aturar el client
 
 Quan acabis de jugar:
 
@@ -377,9 +394,10 @@ http://localhost:8888/admin.html
 |--------|------------|
 | **Stats en temps real** | Jugadors connectats, tanks actius, bales en vol |
 | **Classificació** | Rànquing actualitzat cada 2 segons |
-| **Nova Ronda** | Genera un mapa nou, restaura vides (manté puntuació) |
+| **Nova Ronda** | Genera un mapa nou amb parets noves, restaura vides (manté puntuació) |
 | **Reset Puntuació** | Posa tots els marcadors a zero |
-| **Kick** | Expulsa un jugador de la partida |
+| **Tancar Partida** | Desconnecta tots els jugadors i retorna-los a la pantalla d'inici |
+| **Kick** | Expulsa un jugador concret de la partida |
 
 ### Sistema de puntuació
 
@@ -388,9 +406,58 @@ http://localhost:8888/admin.html
 | Eliminar un tank enemic | +100 |
 | Guanyar la ronda (last tank standing) | +500 |
 
+### Mecàniques del joc
+
+- **Parets destructibles:** les bales destrueixen les parets interiors quan hi impacten. La destrucció es sincronitza en temps real a tots els clients. Les parets del perímetre exterior són indestructibles.
+- **Nova ronda:** quan queda un sol jugador viu (o el professor prem "Nova Ronda"), es genera un mapa completament nou. Tots els clients reben el mapa actualitzat automàticament.
+
 ---
 
-## 5. Resolució de problemes
+## 5. Actualitzar a una versió nova
+
+### Servidor (Ubuntu Server)
+
+```bash
+cd /opt/WarOfTanks
+sudo git pull
+sudo docker compose -f docker-compose.server.yml up --build -d
+```
+
+Comprova que ha arrencat correctament:
+
+```bash
+sudo docker compose -f docker-compose.server.yml logs
+```
+
+> Si havies editat `docker-compose.server.yml` (per exemple per a HTTPS o WALL_DENSITY), els teus canvis es mantenen perquè `git pull` no sobreescriu fitxers modificats localment. Si hi ha conflicte, Git t'avisarà.
+
+### Clients (Windows)
+
+**Si van instal·lar amb Git:**
+
+Obre una terminal a la carpeta del joc i executa:
+
+```powershell
+git pull
+docker compose up --build -d
+```
+
+**Si van instal·lar amb ZIP:**
+
+1. Ves a https://github.com/JosepTomasComellas/WarOfTanks
+2. Descarrega el ZIP nou (**Code → Download ZIP**)
+3. Extreu el ZIP a la mateixa carpeta, substituint els fitxers (conserva el `.env`)
+4. Obre una terminal i executa:
+
+```powershell
+docker compose up --build -d
+```
+
+> El fitxer `.env` (amb la IP del servidor) no es veu afectat per l'actualització si fas servir Git. Amb el ZIP, comprova que el `.env` segueix tenint la IP correcta.
+
+---
+
+## 6. Resolució de problemes
 
 ### El servidor no arrenca
 
@@ -399,7 +466,7 @@ http://localhost:8888/admin.html
 sudo docker ps
 
 # Comprova que els ports no estan ocupats
-sudo ss -tulpn | grep -E '8888|8888'
+sudo ss -tulpn | grep 8888
 
 # Veure els logs d'error
 sudo docker compose -f docker-compose.server.yml logs
