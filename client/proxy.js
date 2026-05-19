@@ -237,7 +237,13 @@ wss.on('connection', async (ws) => {
   });
 
   udp.on('message', (msg) => {
-    if (ws.readyState === WebSocket.OPEN) ws.send(msg);
+    if (ws.readyState !== WebSocket.OPEN) return;
+    ws.send(msg);
+    // Si el servidor envia GAME_OVER (EVENT 0x14 + tipus 4), tanca la WS com a mesura de seguretat
+    // perquè el client torni al login fins i tot si el navegador no processa l'event a temps
+    if (msg.length >= 2 && msg[0] === 0x14 && msg[1] === 4) {
+      setTimeout(() => { if (ws.readyState === WebSocket.OPEN) ws.close(4002, 'Game over'); }, 300);
+    }
   });
 
   udp.on('error', (err) => console.error('[Proxy] UDP error:', err.message));

@@ -36,8 +36,8 @@ class Game {
     this.ws.onmessage = (ev) => this._onPacket(new Uint8Array(ev.data));
     this.ws.onclose   = (ev) => {
       this._cleanup();
-      // Codi 4001 = límit de pestanyes; tornem al login en lloc de mostrar error
-      if (ev.code === 4001) showScreen('login');
+      // 4001 = límit de pestanyes  |  4002 = partida acabada pel servidor
+      if (ev.code === 4001 || ev.code === 4002) showScreen('login');
       else showScreen('disconnected');
     };
     this.ws.onerror   = (e) => console.error('[Game] WS error', e);
