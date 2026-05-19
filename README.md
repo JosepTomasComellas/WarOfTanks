@@ -33,7 +33,7 @@ docker compose up -d
 # → http://localhost:8080
 ```
 
-Consulta [DEPLOY.md](DEPLOY.md) per a la guia completa pas a pas.
+Consulta el **[MANUAL.md](MANUAL.md)** per a la guia completa pas a pas (Ubuntu Server + Windows Docker Desktop).
 
 ---
 
