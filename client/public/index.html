@@ -49,6 +49,9 @@
 
     <!-- GAME SCREEN -->
     <div id="screen-game" class="screen">
+      <div class="game-ui-overlay">
+        <button id="btn-leave" class="btn-leave">✕ SORTIR</button>
+      </div>
       <canvas id="game-canvas"></canvas>
     </div>
 
@@ -102,6 +105,11 @@
 
     document.getElementById('player-name').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') document.getElementById('btn-start').click();
+    });
+
+    document.getElementById('btn-leave').addEventListener('click', () => {
+      if (_game) { _game.leave(); _game = null; }
+      showScreen('login');
     });
   </script>
 </body>

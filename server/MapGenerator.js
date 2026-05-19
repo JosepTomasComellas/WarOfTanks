@@ -1,61 +1,32 @@
 class MapGenerator {
-  constructor(width = 80, height = 60) {
-    this.width  = width;
-    this.height = height;
-    this.tiles  = new Uint8Array(width * height); // 0=floor, 1=wall
+  constructor(width = 80, height = 60, density = 20) {
+    this.width   = width;
+    this.height  = height;
+    this.density = Math.max(0, Math.min(100, density));
+    this.tiles   = new Uint8Array(width * height);
   }
 
   generate() {
-    // Start full of walls
-    this.tiles.fill(1);
+    // Start with all floor
+    this.tiles.fill(0);
 
-    // Carve rooms on a grid
-    const cellW = 7, cellH = 6;
-    const cols = Math.floor((this.width  - 2) / cellW);
-    const rows = Math.floor((this.height - 2) / cellH);
-
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        const ox = 1 + col * cellW + 1;
-        const oy = 1 + row * cellH + 1;
-
-        // Carve 3×3 room
-        for (let dy = 0; dy < 3; dy++)
-          for (let dx = 0; dx < 3; dx++)
-            this._set(ox + dx, oy + dy, 0);
-
-        // Connect right (80% chance)
-        if (col < cols - 1 && Math.random() > 0.2) {
-          const cx = ox + 3;
-          this._set(cx, oy + 1, 0);
-          this._set(cx, oy + 1, 0);
-          this._set(cx + 1, oy + 1, 0);
-        }
-
-        // Connect down (80% chance)
-        if (row < rows - 1 && Math.random() > 0.2) {
-          const cy = oy + 3;
-          this._set(ox + 1, cy, 0);
-          this._set(ox + 1, cy + 1, 0);
-        }
+    if (this.density > 0) {
+      // Scatter rectangular wall clusters; count scales with density
+      const count = Math.round(this.density * 1.8);
+      for (let i = 0; i < count; i++) {
+        const w = 2 + Math.floor(Math.random() * 5); // 2–6 wide
+        const h = 2 + Math.floor(Math.random() * 3); // 2–4 tall
+        const x = 1 + Math.floor(Math.random() * (this.width  - w - 2));
+        const y = 1 + Math.floor(Math.random() * (this.height - h - 2));
+        for (let dy = 0; dy < h; dy++)
+          for (let dx = 0; dx < w; dx++)
+            this._set(x + dx, y + dy, 1);
       }
     }
 
-    // Extra random horizontal/vertical corridors for variety
-    for (let i = 0; i < 30; i++) {
-      const x   = 1 + Math.floor(Math.random() * (this.width  - 4));
-      const y   = 1 + Math.floor(Math.random() * (this.height - 4));
-      const len = 4 + Math.floor(Math.random() * 10);
-      if (Math.random() > 0.5) {
-        for (let d = 0; d < len; d++) this._set(Math.min(x + d, this.width - 2), y, 0);
-      } else {
-        for (let d = 0; d < len; d++) this._set(x, Math.min(y + d, this.height - 2), 0);
-      }
-    }
-
-    // Restore solid border
+    // Solid border (always indestructible)
     for (let x = 0; x < this.width;  x++) { this._set(x, 0, 1); this._set(x, this.height - 1, 1); }
-    for (let y = 0; y < this.height; y++) { this._set(0, y, 1); this._set(this.width  - 1, y, 1); }
+    for (let y = 0; y < this.height; y++) { this._set(0, y, 1); this._set(this.width - 1, y, 1); }
 
     return this;
   }
@@ -95,7 +66,7 @@ class MapGenerator {
         chosen.push(p);
     }
 
-    // Fill up if map is small
+    // Fill up if needed
     let idx = 0;
     while (chosen.length < count && open.length > 0)
       chosen.push(open[idx++ % open.length]);

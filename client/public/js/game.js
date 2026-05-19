@@ -100,6 +100,11 @@ class Game {
           const ty = Math.floor(y);
           this.gs.map.tiles[ty * this.gs.map.width + tx] = 0;
         }
+        if (eventType === EventType.GAME_OVER) {
+          this._cleanup();
+          if (this.ws) { this.ws.onclose = null; this.ws.close(); this.ws = null; }
+          showScreen('login');
+        }
         break;
       }
 
@@ -149,6 +154,12 @@ class Game {
   _send(data) { if (this._wsOpen()) this.ws.send(data); }
 
   _wsOpen() { return this.ws && this.ws.readyState === WebSocket.OPEN; }
+
+  leave() {
+    if (this.myId && this._wsOpen()) this.ws.send(buildLeave(this.myId));
+    this._cleanup();
+    if (this.ws) { this.ws.onclose = null; this.ws.close(); this.ws = null; }
+  }
 
   _cleanup() {
     if (this._rafId)          cancelAnimationFrame(this._rafId);

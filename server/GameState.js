@@ -16,12 +16,13 @@ class GameState {
     this.events       = [];        // flushed each tick by GameServer
     this.mapJustReset = false;
     this._roundTimer  = null;
+    this._wallDensity = Math.max(0, Math.min(100, parseInt(process.env.WALL_DENSITY || '20', 10)));
     this.newRound();
   }
 
   newRound() {
     if (this._roundTimer) { clearTimeout(this._roundTimer); this._roundTimer = null; }
-    this.map    = new MapGenerator(80, 60).generate();
+    this.map    = new MapGenerator(80, 60, this._wallDensity).generate();
     this.spawns = this.map.findSpawnPoints(128);
     this.bullets.clear();
     this.events = [];

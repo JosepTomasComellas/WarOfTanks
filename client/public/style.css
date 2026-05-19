@@ -228,6 +228,32 @@ button:active, #btn-start:active { transform: scale(0.97); }
   box-shadow: 0 0 30px rgba(0,255,65,0.2);
 }
 
+.game-ui-overlay {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 20;
+}
+
+.btn-leave {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  padding: 5px 8px;
+  background: rgba(0,0,0,0.72);
+  color: var(--red);
+  border: 1px solid var(--red);
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.1s, color 0.1s;
+}
+
+.btn-leave:hover {
+  background: var(--red);
+  color: #fff;
+  transform: none;
+  box-shadow: none;
+}
+
 .round-message {
   display: none;
   position: fixed;

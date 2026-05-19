@@ -96,6 +96,17 @@ function handleAdmin(req, res, urlPath) {
     return jsonReply(res, 200, { ok: true });
   }
 
+  if (urlPath === '/api/admin/endgame' && req.method === 'POST') {
+    if (!gs) return jsonReply(res, 503, { error: 'Not a server instance' });
+    const { buildEvent, EventType } = require('../server/protocol');
+    gs._broadcast(buildEvent(EventType.GAME_OVER, 0, 0, 0));
+    gs.state.tanks.clear();
+    gs.clients.clear();
+    for (const wsClient of wss.clients) wsClient.close();
+    console.log('[Admin] Game ended — all players disconnected');
+    return jsonReply(res, 200, { ok: true });
+  }
+
   if (urlPath === '/api/admin/kick' && req.method === 'POST') {
     if (!gs) return jsonReply(res, 503, { error: 'Not a server instance' });
     readBody(req).then(body => {
