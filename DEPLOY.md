@@ -1,207 +1,245 @@
 # War of Tanks — Guia de Desplegament
 
-## Requisits previs
+## Requisit únic
 
-- **Docker Desktop** instal·lat i en funcionament  
-- Connexió a la **mateixa xarxa** que el servidor (WiFi d'aula o LAN)
-- Navegador web modern (Chrome, Firefox, Edge)
+**Docker Desktop** instal·lat i en execució.  
+Descarrega'l a: https://www.docker.com/products/docker-desktop/
+
+> Tots els comandos usen **`docker compose`** (Docker Desktop ja l'inclou).
 
 ---
 
-## Per al professor (servidor)
+## PER AL PROFESSOR — Arrancada del servidor
 
-### 1. Obtenir la imatge
+### Pas 1 · Descarrega els fitxers del servidor
 
-```bash
-docker pull ghcr.io/joseptomascomellas/warofttanks:latest
-```
+Descarrega `docker-compose.server.yml` des del repositori:  
+https://github.com/JosepTomasComellas/WarOfTanks
 
-o bé construir-la localment:
-
-```bash
-git clone https://github.com/JosepTomasComellas/WarOfTanks.git
-cd WarOfTanks
-docker build -t war-of-tanks .
-```
-
-### 2. Arrancar el servidor
+O amb una sola comanda:
 
 ```bash
-docker run -d \
-  --name wot-server \
-  -e ROLE=server \
-  -p 8888:8888/udp \
-  -p 8080:8080 \
-  war-of-tanks
+curl -O https://raw.githubusercontent.com/JosepTomasComellas/WarOfTanks/master/docker-compose.server.yml
 ```
 
-o amb Docker Compose:
+### Pas 2 · Arranca el servidor
 
 ```bash
-docker-compose -f docker-compose.server.yml up -d
+docker compose -f docker-compose.server.yml up -d
 ```
 
-### 3. Obtenir la IP del servidor
+La primera vegada descarrega la imatge automàticament (~50 MB). Triga ~1 minut.
+
+Comprova que funciona:
+
+```bash
+docker compose -f docker-compose.server.yml logs
+```
+
+Hauries de veure:
+```
+[Server] UDP listening on port 8888
+[Proxy]  HTTP+WS on port 8080
+```
+
+### Pas 3 · Obtén la teva IP i comunica-la als alumnes
 
 **Windows:**
 ```
 ipconfig
 ```
-Busca l'adaptador de xarxa actiu i apunta la "Adreça IPv4" (p.ex. `192.168.1.50`).
+Busca **"Adaptador Ethernet"** o **"WiFi"** → **"Adreça IPv4"**
 
 **macOS / Linux:**
-```
-ip addr show   # o ifconfig
-```
-
-### 4. Comunicar la IP als alumnes
-
-Escriu la IP al·la pissarra o projector:
-
-```
-IP SERVIDOR: 192.168.1.50
+```bash
+ip route get 1 | awk '{print $7}'
 ```
 
-### 5. Verificar que el servidor funciona
+Escriu la IP a la pissarra:
+```
+┌─────────────────────────────────┐
+│  IP del servidor: 192.168.1.50  │
+└─────────────────────────────────┘
+```
 
-Obre un navegador a la mateixa màquina: `http://localhost:8080`  
-Hauries de veure la pantalla de login de **War of Tanks**.
+### Pas 4 · Obre el panell d'administració
+
+Amb el servidor arrencat, obre al teu navegador:
+
+```
+http://localhost:8080/admin.html
+```
+
+Des d'aquí pots veure els jugadors connectats, forçar una nova ronda i expulsar jugadors.
 
 ### Aturar el servidor
 
 ```bash
-docker stop wot-server && docker rm wot-server
+docker compose -f docker-compose.server.yml down
 ```
 
 ---
 
-## Per als alumnes (clients)
+## PER ALS ALUMNES — Connexió al joc
 
-### Opció A — Línia de comandes (recomanada)
+### Pas 1 · Descarrega els fitxers
 
-**1. Descarregar la imatge**
+Descarrega **els dos fitxers** i posa'ls a la mateixa carpeta (per exemple, a l'Escriptori):
 
-```bash
-docker pull ghcr.io/joseptomascomellas/warofttanks:latest
-```
+| Fitxer | Contingut |
+|--------|-----------|
+| [`docker-compose.yml`](https://raw.githubusercontent.com/JosepTomasComellas/WarOfTanks/master/docker-compose.yml) | Configuració del contenidor |
+| [`.env.example`](https://raw.githubusercontent.com/JosepTomasComellas/WarOfTanks/master/.env.example) | Plantilla de configuració |
 
-**2. Arrancar el client** (substitueix `192.168.1.50` per la IP del servidor):
+### Pas 2 · Crea el fitxer de configuració
 
-```bash
-docker run -d \
-  --name wot-client \
-  -e ROLE=client \
-  -e SERVER_IP=192.168.1.50 \
-  -p 8080:8080 \
-  war-of-tanks
-```
+Copia `.env.example` i anomena la còpia exactament **`.env`** (sense extensió addicional).
 
-**3. Obrir el navegador** a:
-
-```
-http://localhost:8080
-```
-
-**4. Escriu el teu nom** i prem **PLAYER START**.
-
-**5. Controla el tank:**
-
-| Tecla | Acció |
-|---|---|
-| `W` / `↑` | Avançar |
-| `S` / `↓` | Retrocedir |
-| `A` / `←` | Girar esquerra |
-| `D` / `→` | Girar dreta |
-| `Espai` | Disparar |
-
----
-
-### Opció B — Docker Compose
-
-**1.** Crea un fitxer `.env` al mateix directori:
+Obre `.env` amb el bloc de notes i canvia la IP pel valor que ha indicat el professor:
 
 ```env
 SERVER_IP=192.168.1.50
 ```
 
-**2.** Arranca:
+> **Atenció:** El fitxer s'ha d'anomenar `.env`, no `.env.txt`.  
+> Al Windows, activa "Mostra extensions de fitxer" a l'Explorador per verificar-ho.
+
+### Pas 3 · Arranca el client
+
+Obre una terminal a la carpeta on tens els fitxers i executa:
 
 ```bash
-docker-compose -f docker-compose.client.yml up -d
+docker compose up -d
 ```
 
-**3.** Obre `http://localhost:8080`
+La primera vegada descarrega la imatge (~50 MB). Espera que aparegui:
+```
+Container wot-client  Started
+```
 
----
+### Pas 4 · Obre el joc
+
+Obre el navegador i ves a:
+
+```
+http://localhost:8080
+```
+
+Escriu el teu nom i prem **PLAYER START**.
+
+### Controls
+
+| Tecla | Acció |
+|-------|-------|
+| `W` o `↑` | Avançar |
+| `S` o `↓` | Retrocedir |
+| `A` o `←` | Girar a l'esquerra |
+| `D` o `→` | Girar a la dreta |
+| `Espai` | Disparar |
 
 ### Aturar el client
 
 ```bash
-docker stop wot-client && docker rm wot-client
+docker compose down
 ```
 
 ---
 
-## Guió ràpid per a la competició (full del professor)
+## Panell d'administració (professor)
+
+Accessible des del navegador del servidor:
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  CHECKLIST COMPETICIÓ  War of Tanks                  │
-├─────────────────────────────────────────────────────┤
-│ □ 1. Arranca el servidor al teu PC                   │
-│      docker run -d -e ROLE=server                    │
-│               -p 8888:8888/udp -p 8080:8080          │
-│               ghcr.io/joseptomascomellas/            │
-│               warofttanks:latest                     │
-│                                                      │
-│ □ 2. Escriu la teva IP a la pissarra                  │
-│      (ipconfig → Adreça IPv4)                        │
-│                                                      │
-│ □ 3. Els alumnes executen al seu PC:                  │
-│      docker run -d -e ROLE=client                    │
-│               -e SERVER_IP=<IP_PISSARRA>             │
-│               -p 8080:8080                           │
-│               ghcr.io/joseptomascomellas/            │
-│               warofttanks:latest                     │
-│      → Obrir http://localhost:8080                   │
-│                                                      │
-│ □ 4. Espera que tots els jugadors entrin              │
-│      (veus el recompte al leaderboard)               │
-│                                                      │
-│ □ 5. El joc comença automàticament. Last tank        │
-│      standing guanya la ronda (+500 pts).            │
-│                                                      │
-│ □ 6. Atura el servidor al final:                      │
-│      docker stop wot-server                          │
-└─────────────────────────────────────────────────────┘
+http://localhost:8080/admin.html
 ```
+
+| Funció | Descripció |
+|--------|------------|
+| Stats | Jugadors, tanks actius, bales en vol, tick |
+| Nova Ronda | Reinicia el mapa i les vides (manté puntuació) |
+| Reset Puntuació | Posa tots els marcadors a 0 |
+| Kick | Expulsa un jugador de la partida |
 
 ---
 
 ## Resolució de problemes
 
-| Problema | Possible causa | Solució |
-|---|---|---|
-| No es connecta al servidor | Firewall bloqueja UDP:8888 | Obre el port UDP 8888 al firewall del servidor |
-| La pàgina no carrega | Docker no ha arrencat | `docker logs wot-client` per veure errors |
-| Ping molt alt | WiFi sobrecarregat | Connectar-se per cable Ethernet |
-| El tank no es mou | Finestra del navegador no té el focus | Fes clic al canvas del joc |
+| Problema | Causa probable | Solució |
+|----------|---------------|---------|
+| `docker compose` no es reconeix | Docker Desktop no està obert | Obre Docker Desktop i espera que arrenqui |
+| La pàgina no carrega | El contenidor no ha arrencat | `docker compose logs` per veure l'error |
+| No es connecta al servidor | IP incorrecta al `.env` | Verifica la IP amb el professor |
+| No es connecta al servidor | Firewall del servidor | Obre el port **UDP 8888** al firewall del PC servidor |
+| El tank no respon | El navegador no té el focus | Fes clic al canvas del joc |
+| Ping molt alt (>200ms) | WiFi saturat | Connecta per cable Ethernet si és possible |
+| No veig el fitxer `.env` | Windows oculta extensions | Activa "Mostra extensions de fitxer" a l'Explorador |
+
+### Veure logs en temps real
+
+```bash
+# Servidor
+docker compose -f docker-compose.server.yml logs -f
+
+# Client
+docker compose logs -f
+```
 
 ---
 
-## Arquitectura de la comunicació
+## Guió ràpid per a la competició
 
 ```
-Navegador (localhost)
-    │
-    │  WebSocket :8080
-    ▼
-Docker local (proxy)
-    │
-    │  UDP :8888  (xarxa d'aula)
-    ▼
-Docker servidor (game loop)
+┌──────────────────────────────────────────────────────┐
+│            CHECKLIST  ·  War of Tanks                │
+├──────────────────────────────────────────────────────┤
+│                                                      │
+│  PROFESSOR (fer-ho primer):                          │
+│                                                      │
+│  □ Obre Docker Desktop                               │
+│  □ Executa:                                          │
+│      docker compose -f docker-compose.server.yml     │
+│                      up -d                           │
+│  □ Obtén la IP amb: ipconfig                         │
+│  □ Escriu la IP a la pissarra                        │
+│  □ Obre: http://localhost:8080/admin.html            │
+│                                                      │
+│  ALUMNES (un cop saben la IP):                       │
+│                                                      │
+│  □ Editen .env → SERVER_IP=<IP de la pissarra>       │
+│  □ Executen: docker compose up -d                    │
+│  □ Obren: http://localhost:8080                      │
+│  □ Escriuen el seu nom → PLAYER START                │
+│                                                      │
+│  INICIAR RONDA:                                      │
+│                                                      │
+│  □ Espera que tothom estigui connectat               │
+│     (ho veus al panell admin)                        │
+│  □ Prem "NOVA RONDA" al panell admin                 │
+│  □ Last tank standing guanya (+500 pts)              │
+│                                                      │
+│  ACABAR:                                             │
+│                                                      │
+│  □ docker compose -f docker-compose.server.yml down  │
+│                                                      │
+└──────────────────────────────────────────────────────┘
 ```
 
-El Docker del client actua de **pont** entre el WebSocket del navegador i el UDP del servidor.  
-El navegador mai fa UDP directament: sempre parla amb el proxy local.
+---
+
+## Arquitectura (per als curiosos)
+
+```
+  NAVEGADOR (localhost:8080)
+       │
+       │  WebSocket
+       ▼
+  DOCKER CLIENT (proxy Node.js)
+       │
+       │  UDP · port 8888 · xarxa d'aula
+       ▼
+  DOCKER SERVIDOR (game loop Node.js)
+       │ autoritatiu: física, col·lisions, puntuació
+```
+
+El Docker de cada alumne fa de **pont**: tradueix WebSocket ↔ UDP.  
+El navegador no parla mai directament amb el servidor.
