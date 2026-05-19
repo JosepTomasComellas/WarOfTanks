@@ -40,25 +40,27 @@ function getServerConfig() {
     return Promise.resolve(_serverConfigCache);
   }
 
-  // Client mode: fetch from the game server's HTTP endpoint
-  return new Promise(resolve => {
-    const fallback = { maxTabsPerClient: 1, logoUrl: null };
-    const req = http.get(
-      `http://${SERVER_IP}:${UDP_PORT}/api/config`,
-      { timeout: 3000 },
-      res => {
+  // Client mode: fetch from the game server's HTTP endpoint (prova http, si falla intenta https)
+  const fallback = { maxTabsPerClient: 1, logoUrl: null };
+
+  function tryFetch(mod, scheme) {
+    return new Promise((resolve, reject) => {
+      const opts = { timeout: 3000 };
+      if (scheme === 'https') opts.rejectUnauthorized = false; // accepta certs corporatius/autofirmats
+      const req = mod.get(`${scheme}://${SERVER_IP}:${UDP_PORT}/api/config`, opts, res => {
         let body = '';
         res.on('data', d => { body += d; });
-        res.on('end', () => {
-          try { _serverConfigCache = JSON.parse(body); }
-          catch { _serverConfigCache = fallback; }
-          resolve(_serverConfigCache);
-        });
-      }
-    );
-    req.on('error',   () => { _serverConfigCache = fallback; resolve(fallback); });
-    req.on('timeout', () => { req.destroy(); _serverConfigCache = fallback; resolve(fallback); });
-  });
+        res.on('end', () => { try { resolve(JSON.parse(body)); } catch { reject(new Error('json')); } });
+      });
+      req.on('error',   reject);
+      req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+    });
+  }
+
+  return tryFetch(http, 'http')
+    .catch(() => tryFetch(https, 'https'))
+    .then(cfg  => { _serverConfigCache = cfg;      return cfg;      })
+    .catch(()  => { _serverConfigCache = fallback; return fallback; });
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
