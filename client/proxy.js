@@ -12,6 +12,8 @@ const HTTP_PORT     = parseInt(process.env.HTTP_PORT || '8888', 10);
 const HTTPS_ENABLED = process.env.HTTPS_ENABLED === 'true';
 const SSL_CERT      = process.env.SSL_CERT || '/certs/cert.pem';
 const SSL_KEY       = process.env.SSL_KEY  || '/certs/key.pem';
+const MAX_TABS      = parseInt(process.env.MAX_TABS  || '1',  10); // 0 = unlimited
+const LOGO_URL      = process.env.LOGO_URL || '';
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -24,6 +26,40 @@ const MIME_TYPES = {
 };
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
+
+// ── Server config (fetched once from the game server in client mode) ────────
+
+let _serverConfigCache = null;
+
+function getServerConfig() {
+  if (_serverConfigCache !== null) return Promise.resolve(_serverConfigCache);
+
+  // Server mode: read from own env vars
+  if (bridge.gameServer) {
+    _serverConfigCache = { maxTabsPerClient: MAX_TABS, logoUrl: LOGO_URL || null };
+    return Promise.resolve(_serverConfigCache);
+  }
+
+  // Client mode: fetch from the game server's HTTP endpoint
+  return new Promise(resolve => {
+    const fallback = { maxTabsPerClient: 1, logoUrl: null };
+    const req = http.get(
+      `http://${SERVER_IP}:${UDP_PORT}/api/config`,
+      { timeout: 3000 },
+      res => {
+        let body = '';
+        res.on('data', d => { body += d; });
+        res.on('end', () => {
+          try { _serverConfigCache = JSON.parse(body); }
+          catch { _serverConfigCache = fallback; }
+          resolve(_serverConfigCache);
+        });
+      }
+    );
+    req.on('error',   () => { _serverConfigCache = fallback; resolve(fallback); });
+    req.on('timeout', () => { req.destroy(); _serverConfigCache = fallback; resolve(fallback); });
+  });
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -82,7 +118,6 @@ function handleAdmin(req, res, urlPath) {
   if (urlPath === '/api/admin/newround' && req.method === 'POST') {
     if (!gs) return jsonReply(res, 503, { error: 'Not a server instance' });
     gs.state.newRound();
-    // Broadcast player list so clients see the reset
     const { buildPlayerList } = require('../server/protocol');
     gs._broadcast(buildPlayerList(gs.state.tanks));
     console.log('[Admin] New round forced');
@@ -114,7 +149,6 @@ function handleAdmin(req, res, urlPath) {
         const { id } = JSON.parse(body);
         if (id) {
           gs.state.removePlayer(Number(id));
-          // Also remove from clients map
           for (const [key, c] of gs.clients.entries()) {
             if (c.playerId === Number(id)) { gs.clients.delete(key); break; }
           }
@@ -154,6 +188,12 @@ function createServer(handler) {
 const httpServer = createServer((req, res) => {
   const urlPath = req.url.split('?')[0];
 
+  // Server config (read by browser clients on connect)
+  if (urlPath === '/api/config') {
+    getServerConfig().then(cfg => jsonReply(res, 200, cfg));
+    return;
+  }
+
   // Admin API
   if (urlPath.startsWith('/api/admin')) {
     handleAdmin(req, res, urlPath);
@@ -172,7 +212,15 @@ const httpServer = createServer((req, res) => {
 
 const wss = new WebSocket.Server({ server: httpServer });
 
-wss.on('connection', (ws) => {
+wss.on('connection', async (ws) => {
+  // Enforce max concurrent connections per proxy (configurable from server)
+  const cfg = await getServerConfig().catch(() => ({ maxTabsPerClient: 1 }));
+  const maxTabs = cfg.maxTabsPerClient ?? 1;
+  if (maxTabs > 0 && wss.clients.size > maxTabs) {
+    ws.close(1008, 'Too many connections');
+    return;
+  }
+
   const udp = dgram.createSocket('udp4');
   let ready = false;
 

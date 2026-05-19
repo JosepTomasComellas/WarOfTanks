@@ -20,6 +20,8 @@ services:
       - UDP_PORT=8888
       - HTTP_PORT=8888
       - WALL_DENSITY=20    # 0=camp obert, 100=molt dens (per defecte: 20)
+      - MAX_TABS=1         # pestanyes per alumne: 1=una sola, 0=sense límit
+      - LOGO_URL=          # URL externa del logo (buit = logo per defecte)
       # [HTTPS] Descomenta les 3 línies següents per activar HTTPS:
       # - HTTPS_ENABLED=true
       # - SSL_CERT=/certs/cert.pem

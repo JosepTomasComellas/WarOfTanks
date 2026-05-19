@@ -111,6 +111,15 @@
       if (_game) { _game.leave(); _game = null; }
       showScreen('login');
     });
+
+    // Apply server config (logo URL, etc.)
+    fetch('/api/config').then(r => r.json()).then(cfg => {
+      if (cfg.logoUrl) {
+        document.querySelectorAll('.header-logo, .footer-logo').forEach(img => {
+          img.src = cfg.logoUrl;
+        });
+      }
+    }).catch(() => {});
   </script>
 </body>
 </html>

@@ -318,6 +318,13 @@
     fetchState();
   }
 
+  // Apply server config (logo URL, etc.)
+  fetch('/api/config').then(r => r.json()).then(cfg => {
+    if (cfg.logoUrl) {
+      document.querySelectorAll('header img').forEach(img => { img.src = cfg.logoUrl; });
+    }
+  }).catch(() => {});
+
   // Auto-refresh cada 2 s
   fetchState();
   setInterval(fetchState, 2000);
