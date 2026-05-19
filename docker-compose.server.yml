@@ -2,18 +2,24 @@ version: '3.8'
 
 # ─────────────────────────────────────────────
 #  War of Tanks — SERVIDOR (professor)
-#  docker compose -f docker-compose.server.yml up -d
+#
+#  Si la imatge no és accessible al registre:
+#    docker compose -f docker-compose.server.yml up --build -d
+#
+#  Si ja tens la imatge pública a ghcr.io:
+#    docker compose -f docker-compose.server.yml up -d
 # ─────────────────────────────────────────────
 
 services:
   war-of-tanks:
-    image: ghcr.io/joseptomascomellas/warofttanks:latest
+    build: .                                                # construeix des del Dockerfile local
+    image: ghcr.io/joseptomascomellas/warofttanks:latest   # etiqueta / o usa el registre
     container_name: wot-server
     environment:
       - ROLE=server
       - UDP_PORT=8888
       - HTTP_PORT=8080
     ports:
-      - "8888:8888/udp"   # protocol de joc
+      - "8888:8888/udp"   # protocol de joc UDP
       - "8080:8080"        # interfície web + panell admin
     restart: unless-stopped

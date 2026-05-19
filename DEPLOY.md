@@ -11,24 +11,31 @@ Descarrega'l a: https://www.docker.com/products/docker-desktop/
 
 ## PER AL PROFESSOR — Arrancada del servidor
 
-### Pas 1 · Descarrega els fitxers del servidor
-
-Descarrega `docker-compose.server.yml` des del repositori:  
-https://github.com/JosepTomasComellas/WarOfTanks
-
-O amb una sola comanda:
+### Pas 1 · Clona el repositori
 
 ```bash
-curl -O https://raw.githubusercontent.com/JosepTomasComellas/WarOfTanks/master/docker-compose.server.yml
+git clone https://github.com/JosepTomasComellas/WarOfTanks.git
+cd WarOfTanks
 ```
 
 ### Pas 2 · Arranca el servidor
+
+**Opció A — construint localment** (recomanada, sempre funciona):
+
+```bash
+docker compose -f docker-compose.server.yml up --build -d
+```
+
+**Opció B — usant la imatge del registre** (requereix que el paquet sigui públic a GitHub, veure nota):
 
 ```bash
 docker compose -f docker-compose.server.yml up -d
 ```
 
-La primera vegada descarrega la imatge automàticament (~50 MB). Triga ~1 minut.
+> **Nota — fer pública la imatge a ghcr.io:**  
+> Ves a GitHub → el teu perfil → **Packages** → `warofttanks` → **Package settings**  
+> → **Change visibility** → **Public**.  
+> Fins que ho facis, els alumnes hauran de construir localment (Opció A).
 
 Comprova que funciona:
 
@@ -40,6 +47,7 @@ Hauries de veure:
 ```
 [Server] UDP listening on port 8888
 [Proxy]  HTTP+WS on port 8080
+[Proxy]  Admin panel at http://localhost:8080/admin.html
 ```
 
 ### Pas 3 · Obtén la teva IP i comunica-la als alumnes
@@ -82,14 +90,23 @@ docker compose -f docker-compose.server.yml down
 
 ## PER ALS ALUMNES — Connexió al joc
 
-### Pas 1 · Descarrega els fitxers
+### Pas 1 · Obtén els fitxers
 
-Descarrega **els dos fitxers** i posa'ls a la mateixa carpeta (per exemple, a l'Escriptori):
+**Opció A — clonar el repositori** (recomanada):
 
-| Fitxer | Contingut |
-|--------|-----------|
-| [`docker-compose.yml`](https://raw.githubusercontent.com/JosepTomasComellas/WarOfTanks/master/docker-compose.yml) | Configuració del contenidor |
-| [`.env.example`](https://raw.githubusercontent.com/JosepTomasComellas/WarOfTanks/master/.env.example) | Plantilla de configuració |
+```bash
+git clone https://github.com/JosepTomasComellas/WarOfTanks.git
+cd WarOfTanks
+```
+
+**Opció B — descarregar només els fitxers necessaris** (si no tens git):
+
+Descarrega **els dos fitxers** a la mateixa carpeta:
+
+| Fitxer | Enllaç |
+|--------|--------|
+| `docker-compose.yml` | [descarregar](https://raw.githubusercontent.com/JosepTomasComellas/WarOfTanks/master/docker-compose.yml) |
+| `.env.example` | [descarregar](https://raw.githubusercontent.com/JosepTomasComellas/WarOfTanks/master/.env.example) |
 
 ### Pas 2 · Crea el fitxer de configuració
 
@@ -108,11 +125,17 @@ SERVER_IP=192.168.1.50
 
 Obre una terminal a la carpeta on tens els fitxers i executa:
 
+**Si has clonat el repositori** (construeix localment, sempre funciona):
+```bash
+docker compose up --build -d
+```
+
+**Si has descarregat només els fitxers** (usa la imatge del registre públic):
 ```bash
 docker compose up -d
 ```
 
-La primera vegada descarrega la imatge (~50 MB). Espera que aparegui:
+Espera que aparegui:
 ```
 Container wot-client  Started
 ```

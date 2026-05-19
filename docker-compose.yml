@@ -2,8 +2,10 @@ version: '3.8'
 
 # ─────────────────────────────────────────────
 #  War of Tanks — CLIENT (alumnes)
-#  Crea un fitxer .env amb: SERVER_IP=x.x.x.x
-#  Després: docker compose up -d
+#
+#  1. Crea un fitxer .env amb: SERVER_IP=x.x.x.x
+#  2. docker compose up -d
+#  3. Obre http://localhost:8080
 # ─────────────────────────────────────────────
 
 services:
