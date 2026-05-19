@@ -136,9 +136,14 @@ function handleAdmin(req, res, urlPath) {
   if (urlPath === '/api/admin/endgame' && req.method === 'POST') {
     if (!gs) return jsonReply(res, 503, { error: 'Not a server instance' });
     const { buildEvent, EventType } = require('../server/protocol');
-    gs.state.tanks.clear();
-    gs.clients.clear();
-    for (const wsClient of wss.clients) wsClient.close(4002, 'Game over');
+    // Envia GAME_OVER a tots els client proxies via UDP
+    gs._broadcast(buildEvent(EventType.GAME_OVER, 0, 0, 0));
+    // Dóna temps al broadcast UDP d'arribar als clients, després neteja
+    setTimeout(() => {
+      gs.state.tanks.clear();
+      gs.clients.clear();
+      for (const wsClient of wss.clients) wsClient.close(4002, 'Game over');
+    }, 500);
     console.log('[Admin] Game ended — all players disconnected');
     return jsonReply(res, 200, { ok: true });
   }
