@@ -16,15 +16,18 @@ Fins a **120 jugadors simultanis** · Protocol UDP port 8888 · Estètica retro 
 ### Servidor (professor)
 
 ```bash
-docker compose -f docker-compose.server.yml up -d
+git clone https://github.com/JosepTomasComellas/WarOfTanks.git
+cd WarOfTanks
+docker compose -f docker-compose.server.yml up --build -d
 ```
 
-Obtén la IP de la màquina (`ipconfig` / `ip addr`) i comunica-la als alumnes.
+Obtén la IP de la màquina (`ip addr` / `hostname -I`) i comunica-la als alumnes.  
+Panell d'administració: `http://<IP>:8888/admin.html`
 
 ### Client (cada alumne)
 
-1. Descarrega `docker-compose.yml` i `.env.example`
-2. Copia `.env.example` → `.env` i edita la IP:
+1. Descarrega el repositori (o només `docker-compose.yml` + `.env.example`)
+2. Copia `.env.example` → `.env` i edita la IP del servidor:
 
 ```env
 SERVER_IP=192.168.1.50
@@ -33,11 +36,49 @@ SERVER_IP=192.168.1.50
 3. Arranca i obre el navegador:
 
 ```bash
-docker compose up -d
+docker compose up --build -d
 # → http://localhost:8888
 ```
 
-Consulta el **[MANUAL.md](MANUAL.md)** per a la guia completa pas a pas (Ubuntu Server + Windows Docker Desktop).
+Consulta el **[MANUAL.md](MANUAL.md)** per a la guia completa pas a pas.
+
+---
+
+## Configuració del servidor
+
+Totes les opcions s'editen a `docker-compose.server.yml`:
+
+| Variable | Valor per defecte | Descripció |
+|----------|------------------|------------|
+| `WALL_DENSITY` | `20` | Densitat de parets (0 = camp buit · 100 = molt dens) |
+| `MAX_TABS` | `1` | Pestanyes per alumne (1 = una sola · 0 = sense límit) |
+| `LOGO_URL` | *(buit)* | URL externa del logo (buit = logo per defecte) |
+| `ADMIN_PASSWORD` | *(buit)* | Contrasenya del panell admin (buit = accés lliure) |
+| `HTTPS_ENABLED` | `false` | Activar HTTPS (cal `SSL_CERT` i `SSL_KEY`) |
+
+---
+
+## Panell d'administració
+
+Accessible a `http://<IP>:8888/admin.html` (o HTTPS si està activat).
+
+- **Vista en directe** del camp de batalla (canvas 480×360, actualitzat cada 200 ms)
+- **Classificació** en temps real amb punts, vides i estat de cada jugador
+- **Nova Ronda** — mapa nou, restaura vides, manté puntuació
+- **Reset Puntuació** — posa tots els marcadors a zero
+- **Tancar Partida** — desconnecta tots els jugadors i els retorna al login
+- **Kick** — expulsa un jugador concret
+- **Protecció per contrasenya** via `ADMIN_PASSWORD` (opcional)
+
+---
+
+## Mecànica del joc
+
+- Mapa 80×60 tiles generat aleatòriament cada ronda
+- **Parets destructibles** — les bales destrueixen parets interiors; el perímetre és indestructible
+- 3 vides per jugador · reaparició automàtica
+- +100 pts per eliminació · +500 pts per guanyar la ronda
+- Botó **✕ SORTIR** per abandonar la partida sense tancar el Docker
 
 ---
 
@@ -49,15 +90,10 @@ Consulta el **[MANUAL.md](MANUAL.md)** per a la guia completa pas a pas (Ubuntu 
 | Proxy client | Node.js + WebSocket (`ws`) |
 | Interfície web | HTML5 Canvas + JS pur |
 | So | Web Audio API (sense fitxers externs) |
-| Transport en xarxa | UDP port 8888 |
-| Contenidors | Docker · imatge única |
+| Transport | UDP :8888 (joc) · TCP :8888 (web + admin) |
+| Contenidors | Docker · imatge única, rol per `ROLE=server\|client` |
 
-## Mecànica
-
-- Mapa generat aleatòriament cada ronda (cel·les + corredors, 80×60 tiles)
-- 3 vides per jugador · reaparició automàtica
-- +100 pts per eliminació · +500 pts per guanyar la ronda
-- Leaderboard en temps real · panell d'administrador per al professor
+---
 
 ## Llicència
 
