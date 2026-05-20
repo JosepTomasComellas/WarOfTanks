@@ -166,6 +166,42 @@
     .status.ok  { color: var(--green); }
     .status.err { color: var(--red); }
 
+    /* ── Password overlay ── */
+    #pwd-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,5,0,0.97);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #pwd-overlay.hidden { display: none; }
+    .pwd-box {
+      border: 2px solid var(--green-dk);
+      background: rgba(0,0,0,0.9);
+      padding: 40px 48px;
+      display: flex; flex-direction: column; align-items: center; gap: 20px;
+      max-width: 400px; width: 90%;
+    }
+    .pwd-title { font-size: 12px; letter-spacing: 3px; text-shadow: 0 0 10px var(--green); }
+    .pwd-sub   { font-size: 7px; color: var(--green-dim); letter-spacing: 2px; text-align: center; }
+    .pwd-input {
+      width: 100%;
+      background: #000; color: var(--green);
+      border: 1px solid var(--green-dk);
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px; padding: 10px 12px;
+      letter-spacing: 2px; text-align: center;
+      outline: none;
+    }
+    .pwd-input:focus { border-color: var(--green); box-shadow: 0 0 8px var(--green); }
+    .pwd-btn {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 9px; padding: 12px 24px;
+      background: var(--green); color: #000;
+      border: none; cursor: pointer; letter-spacing: 1px;
+      width: 100%;
+    }
+    .pwd-btn:hover { background: #fff; box-shadow: 0 0 16px var(--green); }
+    .pwd-error { font-size: 7px; color: var(--red); letter-spacing: 1px; min-height: 14px; }
+
     /* ── Footer ── */
     footer {
       position: relative; z-index: 10;
@@ -180,6 +216,17 @@
   </style>
 </head>
 <body>
+
+<!-- Password overlay -->
+<div id="pwd-overlay">
+  <div class="pwd-box">
+    <div class="pwd-title">🔒 ACCÉS RESTRINGIT</div>
+    <div class="pwd-sub">INTRODUEIX LA CONTRASENYA<br>DEL PROFESSOR</div>
+    <input id="pwd-input" class="pwd-input" type="password" placeholder="••••••••" autocomplete="off"/>
+    <div id="pwd-error" class="pwd-error"></div>
+    <button class="pwd-btn" onclick="submitPassword()">▶ ACCEDIR</button>
+  </div>
+</div>
 
 <header>
   <img src="images/logo.png" alt="Logo">
@@ -257,6 +304,70 @@
 
 <script>
   const TANK_COLORS = ['#00ff41','#ff4444','#4488ff','#ffdd00','#ff44ff','#44ffff','#ff8800','#88ff44'];
+
+  // ── Gestió de contrasenya ────────────────────────────────────────────────
+  let _adminPassword = sessionStorage.getItem('adminPwd') || '';
+
+  function adminHeaders() {
+    const h = { 'Content-Type': 'application/json' };
+    if (_adminPassword) h['X-Admin-Password'] = _adminPassword;
+    return h;
+  }
+
+  async function submitPassword() {
+    const pwd = document.getElementById('pwd-input').value;
+    const r = await fetch('/api/admin/state', { headers: { 'X-Admin-Password': pwd } });
+    if (r.ok) {
+      _adminPassword = pwd;
+      sessionStorage.setItem('adminPwd', pwd);
+      document.getElementById('pwd-overlay').classList.add('hidden');
+      startPolling();
+    } else {
+      document.getElementById('pwd-error').textContent = '✗ CONTRASENYA INCORRECTA';
+      document.getElementById('pwd-input').value = '';
+      document.getElementById('pwd-input').focus();
+    }
+  }
+
+  document.getElementById('pwd-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitPassword();
+    document.getElementById('pwd-error').textContent = '';
+  });
+
+  async function checkAccess() {
+    const cfg = await fetch('/api/config').then(r => r.json()).catch(() => ({}));
+    if (cfg.logoUrl) document.querySelectorAll('header img').forEach(img => { img.src = cfg.logoUrl; });
+
+    if (!cfg.adminPasswordRequired) {
+      // Sense contrasenya: accés directe
+      document.getElementById('pwd-overlay').classList.add('hidden');
+      startPolling();
+      return;
+    }
+    if (_adminPassword) {
+      // Tenim contrasenya guardada: prova-la
+      const r = await fetch('/api/admin/state', { headers: { 'X-Admin-Password': _adminPassword } });
+      if (r.ok) {
+        document.getElementById('pwd-overlay').classList.add('hidden');
+        startPolling();
+        return;
+      }
+      // Contrasenya caducada/incorrecta
+      sessionStorage.removeItem('adminPwd');
+      _adminPassword = '';
+    }
+    // Mostra overlay i posa el focus
+    document.getElementById('pwd-input').focus();
+  }
+
+  let _pollingStarted = false;
+  function startPolling() {
+    if (_pollingStarted) return;
+    _pollingStarted = true;
+    renderBattlefield(null);
+    fetchState();
+    setInterval(fetchState, 200);
+  }
 
   // ── Battlefield renderer ──────────────────────────────────────────────────
   const BF_CANVAS = document.getElementById('battlefield-canvas');
@@ -370,7 +481,17 @@
 
   async function fetchState() {
     try {
-      const r = await fetch('/api/admin/state');
+      const r = await fetch('/api/admin/state', { headers: adminHeaders() });
+      if (r.status === 401) {
+        // Contrasenya invàlida: torna a mostrar l'overlay
+        sessionStorage.removeItem('adminPwd');
+        _adminPassword = '';
+        _pollingStarted = false;
+        document.getElementById('pwd-overlay').classList.remove('hidden');
+        document.getElementById('pwd-error').textContent = '✗ SESSIÓ CADUCADA';
+        document.getElementById('pwd-input').focus();
+        return;
+      }
       if (!r.ok) throw new Error(r.status);
       const data = await r.json();
       renderState(data);
@@ -416,19 +537,19 @@
 
   async function newRound() {
     if (!confirm('Iniciar nova ronda? (els jugadors mantenen la puntuació)')) return;
-    await fetch('/api/admin/newround', { method: 'POST' });
+    await fetch('/api/admin/newround', { method: 'POST', headers: adminHeaders() });
     fetchState();
   }
 
   async function resetScores() {
     if (!confirm('Reiniciar totes les puntuacions a 0?')) return;
-    await fetch('/api/admin/resetscores', { method: 'POST' });
+    await fetch('/api/admin/resetscores', { method: 'POST', headers: adminHeaders() });
     fetchState();
   }
 
   async function endGame() {
     if (!confirm('Tancar la partida? Tots els jugadors seran desconnectats i tornaran a la pantalla d\'inici.')) return;
-    await fetch('/api/admin/endgame', { method: 'POST' });
+    await fetch('/api/admin/endgame', { method: 'POST', headers: adminHeaders() });
     fetchState();
   }
 
@@ -436,25 +557,14 @@
     if (!confirm(`Expulsar el jugador "${name}"?`)) return;
     await fetch('/api/admin/kick', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: adminHeaders(),
       body: JSON.stringify({ id }),
     });
     fetchState();
   }
 
-  // Apply server config (logo URL, etc.)
-  fetch('/api/config').then(r => r.json()).then(cfg => {
-    if (cfg.logoUrl) {
-      document.querySelectorAll('header img').forEach(img => { img.src = cfg.logoUrl; });
-    }
-  }).catch(() => {});
-
-  // Render buit inicialment
-  renderBattlefield(null);
-
-  // Auto-refresh cada 200 ms per vista en directe
-  fetchState();
-  setInterval(fetchState, 200);
+  // Inicia comprovant accés (config + contrasenya)
+  checkAccess();
 </script>
 </body>
 </html>

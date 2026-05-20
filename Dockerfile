@@ -20,7 +20,8 @@ ENV NODE_ENV=production \
     SSL_KEY=/certs/key.pem \
     WALL_DENSITY=20 \
     MAX_TABS=1 \
-    LOGO_URL=
+    LOGO_URL= \
+    ADMIN_PASSWORD=
 
 EXPOSE 8888
 EXPOSE 8888/udp

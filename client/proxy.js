@@ -12,8 +12,9 @@ const HTTP_PORT     = parseInt(process.env.HTTP_PORT || '8888', 10);
 const HTTPS_ENABLED = process.env.HTTPS_ENABLED === 'true';
 const SSL_CERT      = process.env.SSL_CERT || '/certs/cert.pem';
 const SSL_KEY       = process.env.SSL_KEY  || '/certs/key.pem';
-const MAX_TABS      = parseInt(process.env.MAX_TABS  || '1',  10); // 0 = unlimited
-const LOGO_URL      = process.env.LOGO_URL || '';
+const MAX_TABS        = parseInt(process.env.MAX_TABS  || '1',  10); // 0 = unlimited
+const LOGO_URL        = process.env.LOGO_URL || '';
+const ADMIN_PASSWORD  = process.env.ADMIN_PASSWORD || '';
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -36,7 +37,7 @@ function getServerConfig() {
 
   // Server mode: read from own env vars
   if (bridge.gameServer) {
-    _serverConfigCache = { maxTabsPerClient: MAX_TABS, logoUrl: LOGO_URL || null };
+    _serverConfigCache = { maxTabsPerClient: MAX_TABS, logoUrl: LOGO_URL || null, adminPasswordRequired: !!ADMIN_PASSWORD };
     return Promise.resolve(_serverConfigCache);
   }
 
@@ -107,9 +108,14 @@ function handleAdmin(req, res, urlPath) {
 
   // CORS preflight
   if (req.method === 'OPTIONS') {
-    res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST' });
+    res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST', 'Access-Control-Allow-Headers': 'X-Admin-Password' });
     res.end();
     return;
+  }
+
+  // Validació de contrasenya
+  if (ADMIN_PASSWORD && req.headers['x-admin-password'] !== ADMIN_PASSWORD) {
+    return jsonReply(res, 401, { error: 'Unauthorized' });
   }
 
   if (urlPath === '/api/admin/state' && req.method === 'GET') {
