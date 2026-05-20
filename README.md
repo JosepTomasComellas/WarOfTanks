@@ -3,6 +3,9 @@
 <p align="center">
   <img src="docs/banner.svg" alt="War of Tanks" width="860"/>
 </p>
+<p align="center">
+  <img src="docs/presentacio.png" alt="Presentació" width="860"/>
+</p>
 
 [![Build & Publish](https://github.com/JosepTomasComellas/WarOfTanks/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/JosepTomasComellas/WarOfTanks/actions/workflows/docker-publish.yml)
 
